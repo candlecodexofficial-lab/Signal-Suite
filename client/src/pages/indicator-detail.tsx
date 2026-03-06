@@ -1,6 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
-import { ArrowLeft, ShoppingCart, Play, CheckCircle2, TrendingUp, BarChart3, Target, Clock, Zap, Activity, Brain, Crown } from "lucide-react";
+import {
+  ArrowLeft, ShoppingCart, Play, CheckCircle2, TrendingUp, BarChart3,
+  Target, Clock, Zap, Activity, Brain, Crown, Globe, Settings,
+  LogIn, LogOut as LogOutIcon, Crosshair, Shield, ChevronRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -29,6 +33,27 @@ const categoryIcons: Record<string, typeof TrendingUp> = {
   "Support/Resistance": Target,
 };
 
+function SectionHeading({ icon: Icon, title, id }: { icon: typeof TrendingUp; title: string; id?: string }) {
+  return (
+    <div className="flex items-center gap-3 mb-5">
+      <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10">
+        <Icon className="h-4.5 w-4.5 text-primary" />
+      </div>
+      <h2 className="text-xl font-semibold" data-testid={id}>{title}</h2>
+    </div>
+  );
+}
+
+function TextBlock({ content }: { content: string }) {
+  return (
+    <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
+      {content.split("\n").map((paragraph, i) => (
+        <p key={i}>{paragraph}</p>
+      ))}
+    </div>
+  );
+}
+
 export default function IndicatorDetail() {
   const params = useParams<{ slug: string }>();
   const { addItem, addTrial, isInCart } = useCart();
@@ -54,9 +79,9 @@ export default function IndicatorDetail() {
       <div className="mx-auto max-w-5xl px-4 py-20 text-center sm:px-6 lg:px-8">
         <h2 className="text-2xl font-bold">Indicator not found</h2>
         <p className="mt-2 text-muted-foreground">The indicator you're looking for doesn't exist.</p>
-        <Link href="/">
+        <Link href="/indicators">
           <Button className="mt-6" data-testid="button-back-home">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Home
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Indicators
           </Button>
         </Link>
       </div>
@@ -92,8 +117,16 @@ export default function IndicatorDetail() {
     { label: "Win Rate", value: indicator.winRate, color: "text-emerald-500 dark:text-emerald-400" },
     { label: "Avg Return", value: indicator.avgReturn, color: "text-emerald-500 dark:text-emerald-400" },
     { label: "Total Trades", value: indicator.totalTrades, color: "text-foreground" },
-    { label: "Trial Period", value: `${indicator.trialDays} days`, color: "text-primary" },
+    ...(isFree ? [] : [{ label: "Trial Period", value: `${indicator.trialDays} days`, color: "text-primary" }]),
   ];
+
+  const settingsBlocks = indicator.recommendedSettings
+    ? indicator.recommendedSettings.split("\n").map((block) => {
+        const colonIdx = block.indexOf(":");
+        if (colonIdx === -1) return { title: block, detail: "" };
+        return { title: block.slice(0, colonIdx).trim(), detail: block.slice(colonIdx + 1).trim() };
+      })
+    : [];
 
   return (
     <div className="min-h-screen">
@@ -105,9 +138,10 @@ export default function IndicatorDetail() {
         </Link>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+
           <div className="flex flex-col gap-8 lg:flex-row">
-            <div className="flex-1">
-              <div className="flex flex-wrap items-start gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-start gap-2">
                 <Badge variant="secondary" data-testid="badge-category">{indicator.category}</Badge>
                 {isFree ? (
                   <Badge variant="secondary" className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" data-testid="badge-tier">
@@ -167,8 +201,26 @@ export default function IndicatorDetail() {
               </div>
             </div>
 
-            <div className={`flex h-48 w-full items-center justify-center rounded-md bg-gradient-to-br lg:h-auto lg:w-80 ${gradient}`}>
-              <Icon className="h-20 w-20 text-foreground/40" />
+            <div className="w-full lg:w-96 shrink-0">
+              {indicator.videoUrl ? (
+                <div className="relative aspect-video rounded-lg border bg-card overflow-hidden">
+                  <iframe
+                    src={indicator.videoUrl}
+                    className="h-full w-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={`${indicator.name} introduction`}
+                    data-testid="video-hero"
+                  />
+                </div>
+              ) : (
+                <div className={`flex aspect-video items-center justify-center rounded-lg bg-gradient-to-br ${gradient} border overflow-hidden`}>
+                  <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                    <Play className="h-12 w-12" />
+                    <p className="text-sm font-medium">Video Coming Soon</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -185,36 +237,34 @@ export default function IndicatorDetail() {
             ))}
           </div>
 
-          {indicator.videoUrl && (
+          {indicator.imageUrl && (
             <div className="mt-10">
-              <h2 className="mb-4 text-xl font-semibold" data-testid="text-video-title">Introduction Video</h2>
-              <div className="relative aspect-video rounded-md border bg-card">
-                <iframe
-                  src={indicator.videoUrl}
-                  className="h-full w-full rounded-md"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  title={`${indicator.name} introduction`}
-                  data-testid="video-intro"
+              <h2 className="mb-4 text-xl font-semibold" data-testid="text-screenshot-title">Indicator Preview</h2>
+              <div className="rounded-lg border bg-card overflow-hidden">
+                <img
+                  src={indicator.imageUrl}
+                  alt={`${indicator.name} chart preview`}
+                  className="w-full object-cover"
+                  data-testid="img-preview"
                 />
               </div>
             </div>
           )}
 
-          {!indicator.videoUrl && (
+          {!indicator.imageUrl && (
             <div className="mt-10">
-              <h2 className="mb-4 text-xl font-semibold">Introduction Video</h2>
-              <div className="flex aspect-video items-center justify-center rounded-md border bg-card">
+              <h2 className="mb-4 text-xl font-semibold">Indicator Preview</h2>
+              <div className={`flex h-56 items-center justify-center rounded-lg border bg-gradient-to-br ${gradient}`}>
                 <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                  <Play className="h-12 w-12" />
-                  <p className="text-sm">Video coming soon</p>
+                  <Icon className="h-16 w-16 opacity-40" />
+                  <p className="text-sm">Chart preview coming soon</p>
                 </div>
               </div>
             </div>
           )}
 
           <div className="mt-10">
-            <h2 className="mb-4 text-xl font-semibold" data-testid="text-description-title">About This Indicator</h2>
+            <SectionHeading icon={Icon} title="About This Indicator" id="text-description-title" />
             <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground leading-relaxed" data-testid="text-description">
               {indicator.description.split("\n").map((paragraph, i) => (
                 <p key={i}>{paragraph}</p>
@@ -222,9 +272,120 @@ export default function IndicatorDetail() {
             </div>
           </div>
 
+          {indicator.markets && indicator.markets.length > 0 && (
+            <div className="mt-10">
+              <SectionHeading icon={Globe} title="Supported Markets & Instruments" id="text-markets-title" />
+              <div className="flex flex-wrap gap-2" data-testid="markets-list">
+                {indicator.markets.map((market, i) => (
+                  <Badge key={i} variant="outline" className="px-3 py-1.5 text-sm" data-testid={`badge-market-${i}`}>
+                    {market}
+                  </Badge>
+                ))}
+              </div>
+              {indicator.bestTimeframes && indicator.bestTimeframes.length > 0 && (
+                <div className="mt-5">
+                  <p className="text-sm font-medium mb-2 text-muted-foreground">Best Timeframes</p>
+                  <div className="flex flex-wrap gap-2" data-testid="timeframes-list">
+                    {indicator.bestTimeframes.map((tf, i) => (
+                      <Badge key={i} variant="secondary" className="px-3 py-1.5 text-sm" data-testid={`badge-timeframe-${i}`}>
+                        <Clock className="mr-1.5 h-3 w-3" /> {tf}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {indicator.signalLogic && (
+            <div className="mt-10">
+              <SectionHeading icon={Brain} title="Signal Logic & Methodology" id="text-signal-logic-title" />
+              <Card className="border-card-border p-6" data-testid="signal-logic-content">
+                <TextBlock content={indicator.signalLogic} />
+              </Card>
+            </div>
+          )}
+
+          {(indicator.entryConditions || indicator.exitConditions) && (
+            <div className="mt-10">
+              <SectionHeading icon={Crosshair} title="Entry & Exit Rules" id="text-entry-exit-title" />
+              <div className="grid gap-4 lg:grid-cols-2">
+                {indicator.entryConditions && (
+                  <Card className="border-card-border p-6" data-testid="entry-conditions">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500/10">
+                        <LogIn className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <h3 className="font-semibold text-emerald-600 dark:text-emerald-400">Entry Conditions</h3>
+                    </div>
+                    <TextBlock content={indicator.entryConditions} />
+                  </Card>
+                )}
+                {indicator.exitConditions && (
+                  <Card className="border-card-border p-6" data-testid="exit-conditions">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-red-500/10">
+                        <LogOutIcon className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+                      </div>
+                      <h3 className="font-semibold text-red-600 dark:text-red-400">Exit Conditions</h3>
+                    </div>
+                    <TextBlock content={indicator.exitConditions} />
+                  </Card>
+                )}
+              </div>
+            </div>
+          )}
+
+          {(indicator.stopLossStrategy || indicator.targetStrategy) && (
+            <div className="mt-10">
+              <SectionHeading icon={Shield} title="Risk Management" id="text-risk-title" />
+              <div className="grid gap-4 lg:grid-cols-2">
+                {indicator.stopLossStrategy && (
+                  <Card className="border-card-border p-6" data-testid="stop-loss-strategy">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-red-500/10">
+                        <Shield className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+                      </div>
+                      <h3 className="font-semibold">Stop-Loss Strategy</h3>
+                    </div>
+                    <TextBlock content={indicator.stopLossStrategy} />
+                  </Card>
+                )}
+                {indicator.targetStrategy && (
+                  <Card className="border-card-border p-6" data-testid="target-strategy">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500/10">
+                        <Target className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <h3 className="font-semibold">Target & Take-Profit</h3>
+                    </div>
+                    <TextBlock content={indicator.targetStrategy} />
+                  </Card>
+                )}
+              </div>
+            </div>
+          )}
+
+          {settingsBlocks.length > 0 && (
+            <div className="mt-10">
+              <SectionHeading icon={Settings} title="Recommended Settings" id="text-settings-title" />
+              <div className="grid gap-3 sm:grid-cols-2" data-testid="settings-grid">
+                {settingsBlocks.map((block, i) => (
+                  <Card key={i} className="border-card-border p-5" data-testid={`settings-block-${i}`}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <ChevronRight className="h-4 w-4 text-primary shrink-0" />
+                      <h4 className="text-sm font-semibold">{block.title}</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{block.detail}</p>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
           {indicator.features && indicator.features.length > 0 && (
             <div className="mt-10">
-              <h2 className="mb-4 text-xl font-semibold" data-testid="text-features-title">Key Features</h2>
+              <SectionHeading icon={Zap} title="Key Features" id="text-features-title" />
               <div className="grid gap-3 sm:grid-cols-2">
                 {indicator.features.map((feature, i) => (
                   <div key={i} className="flex items-start gap-3 rounded-md border border-card-border p-4" data-testid={`feature-item-${i}`}>

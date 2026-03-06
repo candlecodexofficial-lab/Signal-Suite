@@ -26,7 +26,7 @@ A premium web application for browsing and subscribing to TradingView indicators
 ## Pages
 - `/` - Home page with hero, features, CTA
 - `/indicators` - Indicators page with tier filters (All/Free/Premium)
-- `/indicator/:slug` - Indicator detail page with stats, video, features, description
+- `/indicator/:slug` - Rich indicator detail page: hero with video, preview image, stats, about, markets & timeframes, signal logic, entry/exit rules, risk management (stop-loss + targets), recommended settings per timeframe, key features, CTA
 - `/cart` - Cart with duration selection, smart proceed (auth check)
 - `/checkout` - Auto-filled form for logged-in users, registration form for guests
 - `/dashboard` - User dashboard with order history, active indicators, pending requests
@@ -43,7 +43,7 @@ A premium web application for browsing and subscribing to TradingView indicators
 - `POST /api/orders` - Create order (requires auth)
 
 ## Database Tables
-- `indicators` - Product catalog (name, slug, category, tier, price, features, stats)
+- `indicators` - Product catalog (name, slug, category, tier, price, features, stats, markets, bestTimeframes, signalLogic, entryConditions, exitConditions, stopLossStrategy, targetStrategy, recommendedSettings)
 - `users` - User accounts (name, email unique, username, mobile, TradingView username)
 - `orders` - Order records (userId, status, totalAmount, approvedAt)
 - `order_items` - Individual items in orders (indicatorId, duration, price, isTrial)

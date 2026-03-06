@@ -18,6 +18,14 @@ export const indicators = pgTable("indicators", {
   avgReturn: text("avg_return"),
   totalTrades: text("total_trades"),
   trialDays: integer("trial_days").default(7),
+  markets: text("markets").array(),
+  bestTimeframes: text("best_timeframes").array(),
+  signalLogic: text("signal_logic"),
+  entryConditions: text("entry_conditions"),
+  exitConditions: text("exit_conditions"),
+  stopLossStrategy: text("stop_loss_strategy"),
+  targetStrategy: text("target_strategy"),
+  recommendedSettings: text("recommended_settings"),
 });
 
 export const users = pgTable("users", {
