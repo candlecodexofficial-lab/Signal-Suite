@@ -159,6 +159,14 @@ export default function IndicatorDetail() {
                 {indicator.shortDescription}
               </p>
 
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                <span data-testid="text-version">Version 1.1 Beta</span>
+                <span className="text-border">·</span>
+                <span data-testid="text-updated">Last Updated — Mar 2026</span>
+                <span className="text-border">·</span>
+                <span data-testid="text-developer">Developed by <span className="font-medium text-foreground">Candle Codex</span></span>
+              </div>
+
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 {isFree ? (
                   <span className="text-3xl font-bold text-emerald-500 dark:text-emerald-400" data-testid="text-price">Free</span>

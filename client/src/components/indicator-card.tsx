@@ -33,6 +33,13 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
           <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
             {indicator.shortDescription}
           </p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <span data-testid={`text-version-${indicator.id}`}>v1.1 Beta</span>
+            <span className="text-border">·</span>
+            <span data-testid={`text-updated-${indicator.id}`}>Updated Mar 2026</span>
+            <span className="text-border">·</span>
+            <span data-testid={`text-developer-${indicator.id}`}>Candle Codex</span>
+          </div>
         </div>
 
         <div className="mt-auto flex items-center justify-between gap-2 pt-2">
