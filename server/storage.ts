@@ -1,38 +1,57 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { 
+  indicators, registrations, orders, orderItems,
+  type Indicator, type InsertIndicator,
+  type Registration, type InsertRegistration,
+  type Order, type InsertOrder,
+  type OrderItem, type InsertOrderItem
+} from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  getIndicators(): Promise<Indicator[]>;
+  getIndicatorBySlug(slug: string): Promise<Indicator | undefined>;
+  getIndicatorById(id: number): Promise<Indicator | undefined>;
+  createIndicator(indicator: InsertIndicator): Promise<Indicator>;
+  createRegistration(registration: InsertRegistration): Promise<Registration>;
+  createOrder(order: InsertOrder): Promise<Order>;
+  createOrderItem(item: InsertOrderItem): Promise<OrderItem>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+export class DatabaseStorage implements IStorage {
+  async getIndicators(): Promise<Indicator[]> {
+    return db.select().from(indicators);
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async getIndicatorBySlug(slug: string): Promise<Indicator | undefined> {
+    const [result] = await db.select().from(indicators).where(eq(indicators.slug, slug));
+    return result;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async getIndicatorById(id: number): Promise<Indicator | undefined> {
+    const [result] = await db.select().from(indicators).where(eq(indicators.id, id));
+    return result;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async createIndicator(indicator: InsertIndicator): Promise<Indicator> {
+    const [result] = await db.insert(indicators).values(indicator).returning();
+    return result;
+  }
+
+  async createRegistration(registration: InsertRegistration): Promise<Registration> {
+    const [result] = await db.insert(registrations).values(registration).returning();
+    return result;
+  }
+
+  async createOrder(order: InsertOrder): Promise<Order> {
+    const [result] = await db.insert(orders).values(order).returning();
+    return result;
+  }
+
+  async createOrderItem(item: InsertOrderItem): Promise<OrderItem> {
+    const [result] = await db.insert(orderItems).values(item).returning();
+    return result;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
