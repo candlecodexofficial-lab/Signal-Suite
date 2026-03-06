@@ -82,6 +82,54 @@ export async function registerRoutes(
     res.json({ message: "Logged out" });
   });
 
+  app.get("/api/dashboard", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    const userOrders = await storage.getUserOrders(req.session.userId);
+    const allIndicators = await storage.getIndicators();
+    const indicatorMap = new Map(allIndicators.map(i => [i.id, i]));
+
+    const ordersWithItems = await Promise.all(
+      userOrders.map(async (order) => {
+        const items = await storage.getOrderItems(order.id);
+        const enrichedItems = items.map((item) => {
+          const indicator = indicatorMap.get(item.indicatorId);
+          let daysRemaining: number | null = null;
+          let accessStatus: "pending" | "active" | "expired" | "rejected" = "pending";
+
+          if (order.status === "rejected") {
+            accessStatus = "rejected";
+          } else if (order.status === "approved" && order.approvedAt) {
+            const approvedDate = new Date(order.approvedAt);
+            const expiryDate = new Date(approvedDate);
+            expiryDate.setMonth(expiryDate.getMonth() + item.duration);
+            const now = new Date();
+            const msRemaining = expiryDate.getTime() - now.getTime();
+            daysRemaining = Math.max(0, Math.ceil(msRemaining / (1000 * 60 * 60 * 24)));
+            accessStatus = daysRemaining > 0 ? "active" : "expired";
+          } else if (order.status === "approved") {
+            accessStatus = "active";
+            daysRemaining = null;
+          }
+
+          return {
+            ...item,
+            indicatorName: indicator?.name || "Unknown",
+            indicatorSlug: indicator?.slug || "",
+            indicatorCategory: indicator?.category || "",
+            daysRemaining,
+            accessStatus,
+          };
+        });
+        return { ...order, items: enrichedItems };
+      })
+    );
+
+    res.json(ordersWithItems);
+  });
+
   app.post("/api/orders", async (req, res) => {
     if (!req.session.userId) {
       return res.status(401).json({ message: "Not authenticated" });

@@ -13,6 +13,7 @@ import IndicatorsPage from "@/pages/indicators";
 import IndicatorDetail from "@/pages/indicator-detail";
 import CartPage from "@/pages/cart";
 import Checkout from "@/pages/checkout";
+import Dashboard from "@/pages/dashboard";
 
 function Router() {
   return (
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/indicator/:slug" component={IndicatorDetail} />
       <Route path="/cart" component={CartPage} />
       <Route path="/checkout" component={Checkout} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route component={NotFound} />
     </Switch>
   );

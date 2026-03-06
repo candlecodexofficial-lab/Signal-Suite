@@ -29,6 +29,7 @@ A premium web application for browsing and subscribing to TradingView indicators
 - `/indicator/:slug` - Indicator detail page with stats, video, features, description
 - `/cart` - Cart with duration selection, smart proceed (auth check)
 - `/checkout` - Auto-filled form for logged-in users, registration form for guests
+- `/dashboard` - User dashboard with order history, active indicators, pending requests
 
 ## API Routes
 - `GET /api/indicators` - List all indicators
@@ -38,12 +39,13 @@ A premium web application for browsing and subscribing to TradingView indicators
 - `POST /api/auth/signup-or-login` - Create or log in user by email detection
 - `POST /api/auth/update` - Update authenticated user profile
 - `POST /api/auth/logout` - Destroy session
+- `GET /api/dashboard` - Get user's orders with enriched items (access status, days remaining)
 - `POST /api/orders` - Create order (requires auth)
 
 ## Database Tables
 - `indicators` - Product catalog (name, slug, category, tier, price, features, stats)
 - `users` - User accounts (name, email unique, username, mobile, TradingView username)
-- `orders` - Order records (userId, status, totalAmount)
+- `orders` - Order records (userId, status, totalAmount, approvedAt)
 - `order_items` - Individual items in orders (indicatorId, duration, price, isTrial)
 - `session` - Express session store (auto-created by connect-pg-simple)
 
@@ -55,11 +57,19 @@ A premium web application for browsing and subscribing to TradingView indicators
 - Cart "Proceed" opens auth modal for guests, navigates directly for logged-in users
 - Checkout auto-fills and shows read-only details for logged-in users with "Edit" option
 
+## Dashboard
+- Stats cards: Active Indicators count, Pending Requests count, Total Orders count
+- Active Indicators section: shows indicators with "active" access status and days remaining
+- Pending Access Requests: shows items from pending orders awaiting admin approval
+- Order History: all orders with status badges (Pending/Approved/Rejected), items with access status
+- Access computed from order.approvedAt + item.duration months; expired if past that date
+
 ## Key Features
 - Three-tier system: Free indicators (green badge, $0) and Premium (amber badge, priced)
 - Free trial option for premium indicators
 - Cart with configurable duration (1-12 months)
 - Smart auth: single form for signup + login
+- User dashboard with order tracking and active indicator access
 - Dark/light mode toggle
 - Responsive design
 - Framer Motion animations

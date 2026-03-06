@@ -6,7 +6,7 @@ import {
   type OrderItem, type InsertOrderItem
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   getIndicators(): Promise<Indicator[]>;
@@ -19,6 +19,8 @@ export interface IStorage {
   updateUser(id: number, data: Partial<InsertUser>): Promise<User>;
   createOrder(order: InsertOrder): Promise<Order>;
   createOrderItem(item: InsertOrderItem): Promise<OrderItem>;
+  getUserOrders(userId: number): Promise<Order[]>;
+  getOrderItems(orderId: number): Promise<OrderItem[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -69,6 +71,14 @@ export class DatabaseStorage implements IStorage {
   async createOrderItem(item: InsertOrderItem): Promise<OrderItem> {
     const [result] = await db.insert(orderItems).values(item).returning();
     return result;
+  }
+
+  async getUserOrders(userId: number): Promise<Order[]> {
+    return db.select().from(orders).where(eq(orders.userId, userId)).orderBy(desc(orders.createdAt));
+  }
+
+  async getOrderItems(orderId: number): Promise<OrderItem[]> {
+    return db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
   }
 }
 

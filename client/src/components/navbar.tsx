@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ShoppingCart, TrendingUp, Menu, X, LogOut, UserCircle } from "lucide-react";
+import { ShoppingCart, TrendingUp, Menu, X, LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -105,6 +105,12 @@ export function Navbar() {
                     </p>
                   </div>
                   <DropdownMenuSeparator />
+                  <Link href="/dashboard">
+                    <DropdownMenuItem data-testid="link-dashboard">
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      Dashboard
+                    </DropdownMenuItem>
+                  </Link>
                   <DropdownMenuItem
                     onClick={() => logout()}
                     data-testid="button-logout"
@@ -158,18 +164,30 @@ export function Navbar() {
               </Button>
             )}
             {user && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start text-muted-foreground"
-                onClick={() => {
-                  setMobileOpen(false);
-                  logout();
-                }}
-                data-testid="button-mobile-logout"
-              >
-                <LogOut className="mr-2 h-4 w-4" /> Log out
-              </Button>
+              <>
+                <Link href="/dashboard" onClick={() => setMobileOpen(false)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start"
+                    data-testid="link-mobile-dashboard"
+                  >
+                    <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
+                  </Button>
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start text-muted-foreground"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    logout();
+                  }}
+                  data-testid="button-mobile-logout"
+                >
+                  <LogOut className="mr-2 h-4 w-4" /> Log out
+                </Button>
+              </>
             )}
           </div>
         </div>

@@ -37,6 +37,7 @@ export const orders = pgTable("orders", {
   status: text("status").notNull().default("pending"),
   totalAmount: text("total_amount").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+  approvedAt: timestamp("approved_at"),
 });
 
 export const orderItems = pgTable("order_items", {
