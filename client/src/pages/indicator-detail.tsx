@@ -147,7 +147,7 @@ export default function IndicatorDetail() {
                 )}
                 {!isFree && indicator.trialDays && (
                   <Badge variant="outline" data-testid="badge-trial">
-                    <Clock className="mr-1 h-3 w-3" /> {indicator.trialDays}-day free trial
+                    <Clock className="mr-1 h-3 w-3" /> {indicator.trialDays}-day trial
                   </Badge>
                 )}
               </div>
@@ -164,7 +164,7 @@ export default function IndicatorDetail() {
                   <span className="text-3xl font-bold text-emerald-500 dark:text-emerald-400" data-testid="text-price">Free</span>
                 ) : (
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold" data-testid="text-price">${indicator.price}</span>
+                    <span className="text-3xl font-bold" data-testid="text-price">₹{Number(indicator.price).toLocaleString("en-IN")}</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
                 )}
@@ -187,7 +187,7 @@ export default function IndicatorDetail() {
                       <ShoppingCart className="mr-2 h-4 w-4" /> Add to Cart
                     </Button>
                     <Button variant="outline" size="lg" onClick={handleGetTrial} data-testid="button-get-trial">
-                      Get Free Trial
+                      Get Trial
                     </Button>
                   </>
                 )}
@@ -384,7 +384,7 @@ export default function IndicatorDetail() {
             <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">
               {isFree
                 ? `Get free access to ${indicator.name} and start trading with confidence.`
-                : `Try ${indicator.name} free for ${indicator.trialDays} days. No credit card required.`}
+                : `Try ${indicator.name} for ${indicator.trialDays} days at just ₹5,250. Start trading with confidence.`}
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               {inCart ? (
@@ -403,7 +403,7 @@ export default function IndicatorDetail() {
                     Add to Cart
                   </Button>
                   <Button variant="outline" size="lg" onClick={handleGetTrial} data-testid="button-bottom-trial">
-                    Start Free Trial
+                    Get Trial
                   </Button>
                 </>
               )}

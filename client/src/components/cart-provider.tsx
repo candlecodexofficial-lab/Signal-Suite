@@ -46,7 +46,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addTrial = useCallback((item: Omit<CartItem, "duration" | "isTrial">) => {
     setItems((prev) => {
       if (prev.some((i) => i.indicatorId === item.indicatorId)) return prev;
-      return [...prev, { ...item, duration: 1, isTrial: true }];
+      return [...prev, { ...item, price: "5250", duration: 1, isTrial: true }];
     });
   }, []);
 
@@ -63,7 +63,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clearCart = useCallback(() => setItems([]), []);
 
   const totalPrice = items.reduce((sum, item) => {
-    if (item.isTrial) return sum;
+    if (item.isTrial) return sum + parseFloat(item.price);
     return sum + parseFloat(item.price) * item.duration;
   }, 0);
 

@@ -41,7 +41,7 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
               <span className="text-2xl font-bold tracking-tight text-emerald-500 dark:text-emerald-400" data-testid={`text-price-${indicator.id}`}>Free</span>
             ) : (
               <>
-                <span className="text-2xl font-bold tracking-tight" data-testid={`text-price-${indicator.id}`}>${indicator.price}</span>
+                <span className="text-2xl font-bold tracking-tight" data-testid={`text-price-${indicator.id}`}>₹{Number(indicator.price).toLocaleString("en-IN")}</span>
                 <span className="text-sm text-muted-foreground">/mo</span>
               </>
             )}
@@ -63,7 +63,7 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
                 }}
                 data-testid={`button-trial-${indicator.id}`}
               >
-                Free Trial
+                Get Trial
               </Button>
             )}
             {!inCart && isFree && (

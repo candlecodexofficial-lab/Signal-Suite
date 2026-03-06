@@ -91,11 +91,11 @@ export default function CartPage() {
                           </Link>
                           {item.isTrial ? (
                             <Badge variant="secondary" className="text-xs" data-testid={`badge-trial-${item.indicatorId}`}>
-                              <Clock className="mr-1 h-3 w-3" /> Free Trial
+                              <Clock className="mr-1 h-3 w-3" /> 15-Day Trial
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="text-xs">
-                              <Tag className="mr-1 h-3 w-3" /> ${item.price}/mo
+                              <Tag className="mr-1 h-3 w-3" /> ₹{Number(item.price).toLocaleString("en-IN")}/mo
                             </Badge>
                           )}
                         </div>
@@ -125,15 +125,15 @@ export default function CartPage() {
                       <div className="flex items-center gap-4">
                         <div className="text-right">
                           {item.isTrial ? (
-                            <p className="text-lg font-bold text-primary" data-testid={`text-item-total-${item.indicatorId}`}>Free</p>
+                            <p className="text-lg font-bold text-primary" data-testid={`text-item-total-${item.indicatorId}`}>₹{Number(item.price).toLocaleString("en-IN")}</p>
                           ) : (
                             <>
                               <p className="text-lg font-bold" data-testid={`text-item-total-${item.indicatorId}`}>
-                                ${(parseFloat(item.price) * item.duration).toFixed(2)}
+                                ₹{(parseFloat(item.price) * item.duration).toLocaleString("en-IN")}
                               </p>
                               {item.duration > 1 && (
                                 <p className="text-xs text-muted-foreground">
-                                  ${item.price} x {item.duration} months
+                                  ₹{Number(item.price).toLocaleString("en-IN")} x {item.duration} months
                                 </p>
                               )}
                             </>
@@ -165,7 +165,7 @@ export default function CartPage() {
                   <div key={item.indicatorId} className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground truncate mr-2">{item.name}</span>
                     <span className="shrink-0 font-medium">
-                      {item.isTrial ? "Free" : `$${(parseFloat(item.price) * item.duration).toFixed(2)}`}
+                      {item.isTrial ? `₹${Number(item.price).toLocaleString("en-IN")}` : `₹${(parseFloat(item.price) * item.duration).toLocaleString("en-IN")}`}
                     </span>
                   </div>
                 ))}
@@ -175,7 +175,7 @@ export default function CartPage() {
 
               <div className="flex items-center justify-between">
                 <span className="font-semibold">Total</span>
-                <span className="text-xl font-bold" data-testid="text-total-price">${totalPrice.toFixed(2)}</span>
+                <span className="text-xl font-bold" data-testid="text-total-price">₹{totalPrice.toLocaleString("en-IN")}</span>
               </div>
 
               <Button className="mt-6 w-full" size="lg" onClick={handleProceed} data-testid="button-proceed">

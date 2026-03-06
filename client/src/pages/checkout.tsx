@@ -265,15 +265,17 @@ export default function Checkout() {
                       <span className="truncate mr-2 font-medium">{item.name}</span>
                       <span className="shrink-0">
                         {item.isTrial ? (
-                          <Badge variant="secondary" className="text-xs">Trial</Badge>
+                          <span className="text-sm font-medium">₹{Number(item.price).toLocaleString("en-IN")}</span>
                         ) : (
-                          `$${(parseFloat(item.price) * item.duration).toFixed(2)}`
+                          `₹${(parseFloat(item.price) * item.duration).toLocaleString("en-IN")}`
                         )}
                       </span>
                     </div>
-                    {!item.isTrial && (
+                    {item.isTrial ? (
+                      <p className="text-xs text-muted-foreground">15-day trial</p>
+                    ) : (
                       <p className="text-xs text-muted-foreground">
-                        {item.duration} month{item.duration !== 1 ? "s" : ""} x ${item.price}/mo
+                        {item.duration} month{item.duration !== 1 ? "s" : ""} x ₹{Number(item.price).toLocaleString("en-IN")}/mo
                       </p>
                     )}
                   </div>
@@ -284,7 +286,7 @@ export default function Checkout() {
 
               <div className="flex items-center justify-between">
                 <span className="font-semibold">Total</span>
-                <span className="text-xl font-bold" data-testid="text-checkout-total">${totalPrice.toFixed(2)}</span>
+                <span className="text-xl font-bold" data-testid="text-checkout-total">₹{totalPrice.toLocaleString("en-IN")}</span>
               </div>
             </Card>
           </div>

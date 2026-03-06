@@ -152,11 +152,9 @@ export async function registerRoutes(
 
       const duration = Math.max(1, Math.min(12, parseInt(item.duration) || 1));
       const isTrial = item.isTrial === true && indicator.tier === "premium";
-      const price = isTrial ? "0" : (parseFloat(indicator.price) * duration).toFixed(2);
+      const price = isTrial ? "5250" : (parseFloat(indicator.price) * duration).toFixed(2);
 
-      if (!isTrial) {
-        serverTotal += parseFloat(price);
-      }
+      serverTotal += parseFloat(price);
 
       validatedItems.push({
         indicatorId: indicator.id,

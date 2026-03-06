@@ -213,7 +213,7 @@ export default function Dashboard() {
                           {item.indicatorName}
                         </Link>
                         <p className="text-xs text-muted-foreground">
-                          {item.isTrial ? "Free Trial" : `${item.duration} month${item.duration !== 1 ? "s" : ""}`} — Order #{item.orderId}
+                          {item.isTrial ? "15-Day Trial" : `${item.duration} month${item.duration !== 1 ? "s" : ""}`} — Order #{item.orderId}
                         </p>
                       </div>
                     </div>
@@ -298,16 +298,16 @@ export default function Dashboard() {
                                 )}
                               </div>
                               <p className="mt-0.5 text-xs text-muted-foreground">
-                                {item.isTrial ? "Free Trial" : `${item.duration} month${item.duration !== 1 ? "s" : ""}`}
+                                {item.isTrial ? "15-Day Trial" : `${item.duration} month${item.duration !== 1 ? "s" : ""}`}
                                 {" · "}
                                 {item.indicatorCategory}
                               </p>
                             </div>
                             <div className="text-right shrink-0">
                               {item.isTrial ? (
-                                <span className="text-sm font-medium text-primary">Free</span>
+                                <span className="text-sm font-medium text-primary">₹5,250</span>
                               ) : (
-                                <span className="text-sm font-medium">${parseFloat(item.price).toFixed(2)}</span>
+                                <span className="text-sm font-medium">₹{parseFloat(item.price).toLocaleString("en-IN")}</span>
                               )}
                               {item.accessStatus === "active" && item.daysRemaining !== null && (
                                 <p className="text-xs text-muted-foreground">{item.daysRemaining}d remaining</p>
