@@ -93,6 +93,10 @@ export default function CartPage() {
                             <Badge variant="secondary" className="text-xs" data-testid={`badge-trial-${item.indicatorId}`}>
                               <Clock className="mr-1 h-3 w-3" /> 15-Day Trial
                             </Badge>
+                          ) : parseFloat(item.price) === 0 ? (
+                            <Badge variant="secondary" className="text-xs bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
+                              Free
+                            </Badge>
                           ) : (
                             <Badge variant="outline" className="text-xs">
                               <Tag className="mr-1 h-3 w-3" /> ₹{Number(item.price).toLocaleString("en-IN")}/mo
@@ -100,7 +104,7 @@ export default function CartPage() {
                           )}
                         </div>
 
-                        {!item.isTrial && (
+                        {!item.isTrial && parseFloat(item.price) > 0 && (
                           <div className="mt-3 flex items-center gap-3">
                             <span className="text-sm text-muted-foreground">Duration:</span>
                             <Select
@@ -120,12 +124,20 @@ export default function CartPage() {
                             </Select>
                           </div>
                         )}
+                        {!item.isTrial && parseFloat(item.price) === 0 && (
+                          <div className="mt-3 flex items-center gap-3">
+                            <span className="text-sm text-muted-foreground">Duration:</span>
+                            <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400" data-testid={`text-lifetime-${item.indicatorId}`}>Lifetime</span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-4">
                         <div className="text-right">
                           {item.isTrial ? (
                             <p className="text-lg font-bold text-primary" data-testid={`text-item-total-${item.indicatorId}`}>₹{Number(item.price).toLocaleString("en-IN")}</p>
+                          ) : parseFloat(item.price) === 0 ? (
+                            <p className="text-lg font-bold text-emerald-500 dark:text-emerald-400" data-testid={`text-item-total-${item.indicatorId}`}>Free</p>
                           ) : (
                             <>
                               <p className="text-lg font-bold" data-testid={`text-item-total-${item.indicatorId}`}>
@@ -165,7 +177,7 @@ export default function CartPage() {
                   <div key={item.indicatorId} className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground truncate mr-2">{item.name}</span>
                     <span className="shrink-0 font-medium">
-                      {item.isTrial ? `₹${Number(item.price).toLocaleString("en-IN")}` : `₹${(parseFloat(item.price) * item.duration).toLocaleString("en-IN")}`}
+                      {item.isTrial ? `₹${Number(item.price).toLocaleString("en-IN")}` : parseFloat(item.price) === 0 ? "Free" : `₹${(parseFloat(item.price) * item.duration).toLocaleString("en-IN")}`}
                     </span>
                   </div>
                 ))}
