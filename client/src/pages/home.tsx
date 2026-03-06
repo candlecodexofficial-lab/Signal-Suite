@@ -1,15 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Shield, Zap, BarChart3, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { IndicatorCard } from "@/components/indicator-card";
 import { Link } from "wouter";
-import { useState } from "react";
 import { motion } from "framer-motion";
-import type { Indicator } from "@shared/schema";
-
-const categories = ["All", "Trend Following", "Momentum", "Volume Analysis", "Volatility", "Smart Money", "Support/Resistance"];
 
 const features = [
   {
@@ -30,16 +23,6 @@ const features = [
 ];
 
 export default function Home() {
-  const [activeCategory, setActiveCategory] = useState("All");
-
-  const { data: indicators, isLoading } = useQuery<Indicator[]>({
-    queryKey: ["/api/indicators"],
-  });
-
-  const filtered = activeCategory === "All"
-    ? indicators
-    : indicators?.filter((i) => i.category === activeCategory);
-
   return (
     <div className="min-h-screen">
       <section className="relative overflow-hidden border-b">
@@ -64,11 +47,11 @@ export default function Home() {
               Backtested, optimized, and ready to deploy on your charts.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <a href="#indicators">
+              <Link href="/indicators">
                 <Button size="lg" data-testid="button-explore">
                   Explore Indicators <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
-              </a>
+              </Link>
               <a href="#features">
                 <Button variant="outline" size="lg" data-testid="button-learn-more">
                   Learn More
@@ -102,65 +85,6 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="indicators" className="scroll-mt-20">
-        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-          <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl" data-testid="text-section-title">
-                Our Indicators
-              </h2>
-              <p className="mt-2 text-muted-foreground">
-                Choose from our curated collection of high-performance indicators.
-              </p>
-            </div>
-          </div>
-
-          <div className="mb-8 flex flex-wrap gap-2" data-testid="category-filters">
-            {categories.map((cat) => (
-              <Button
-                key={cat}
-                variant={activeCategory === cat ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveCategory(cat)}
-                data-testid={`button-category-${cat.toLowerCase().replace(/[/\s]/g, "-")}`}
-              >
-                {cat}
-              </Button>
-            ))}
-          </div>
-
-          {isLoading ? (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="rounded-md border border-card-border p-5">
-                  <Skeleton className="mb-4 h-32 w-full rounded-md" />
-                  <Skeleton className="mb-2 h-5 w-2/3" />
-                  <Skeleton className="mb-4 h-4 w-full" />
-                  <Skeleton className="h-8 w-1/3" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-              data-testid="indicators-grid"
-            >
-              {filtered?.map((indicator) => (
-                <IndicatorCard key={indicator.id} indicator={indicator} />
-              ))}
-              {filtered?.length === 0 && (
-                <div className="col-span-full py-20 text-center text-muted-foreground">
-                  No indicators found in this category.
-                </div>
-              )}
-            </motion.div>
-          )}
-        </div>
-      </section>
-
       <section className="border-t">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <div className="rounded-lg border bg-card p-8 sm:p-12 text-center">
@@ -172,11 +96,11 @@ export default function Home() {
               See the results on your own charts before committing.
             </p>
             <div className="mt-8">
-              <a href="#indicators">
+              <Link href="/indicators">
                 <Button size="lg" data-testid="button-get-started">
                   Get Started <ChevronRight className="ml-1 h-4 w-4" />
                 </Button>
-              </a>
+              </Link>
             </div>
           </div>
         </div>
