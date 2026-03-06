@@ -15,7 +15,7 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
   return (
     <Card className="group flex flex-col border-card-border transition-colors duration-200 hover-elevate" data-testid={`card-indicator-${indicator.id}`}>
       <div className="flex flex-1 flex-col gap-4 p-5">
-        <div className="flex items-start gap-2">
+        <div className="flex items-start justify-between gap-2">
           {isFree ? (
             <Badge variant="secondary" className="text-xs bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" data-testid={`badge-tier-${indicator.id}`}>
               Free
@@ -25,6 +25,16 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
               <Crown className="mr-1 h-3 w-3" /> Premium
             </Badge>
           )}
+          <div data-testid={`text-price-${indicator.id}`}>
+            {isFree ? (
+              <span className="text-sm font-bold text-emerald-500 dark:text-emerald-400">Free</span>
+            ) : (
+              <>
+                <span className="text-sm font-bold">₹{Number(indicator.price).toLocaleString("en-IN")}</span>
+                <span className="text-xs text-muted-foreground">/mo</span>
+              </>
+            )}
+          </div>
         </div>
 
         <div>
@@ -53,17 +63,7 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
           </div>
         </div>
 
-        <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-          <div>
-            {isFree ? (
-              <span className="text-2xl font-bold tracking-tight text-emerald-500 dark:text-emerald-400" data-testid={`text-price-${indicator.id}`}>Free</span>
-            ) : (
-              <>
-                <span className="text-2xl font-bold tracking-tight" data-testid={`text-price-${indicator.id}`}>₹{Number(indicator.price).toLocaleString("en-IN")}</span>
-                <span className="text-sm text-muted-foreground">/mo</span>
-              </>
-            )}
-          </div>
+        <div className="mt-auto flex items-center justify-end gap-2 pt-2">
           <div className="flex items-center gap-2">
             {!inCart && !isFree && (
               <Button
