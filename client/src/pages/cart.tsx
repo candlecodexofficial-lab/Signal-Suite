@@ -165,6 +165,12 @@ export default function CartPage() {
                 </motion.div>
               ))}
             </AnimatePresence>
+
+            <Link href="/indicators">
+              <Button variant="outline" className="w-full mt-4" data-testid="button-add-more">
+                <ShoppingCart className="mr-2 h-4 w-4" /> Add More Indicators
+              </Button>
+            </Link>
           </div>
 
           <div className="lg:w-80">
