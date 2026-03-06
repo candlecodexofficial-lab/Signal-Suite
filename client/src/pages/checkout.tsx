@@ -97,13 +97,23 @@ export default function Checkout() {
           </div>
           <h2 className="mt-6 text-2xl font-bold" data-testid="text-order-complete">Order Submitted</h2>
           <p className="mt-3 text-muted-foreground leading-relaxed">
-            Your order has been received. You will receive a confirmation email with instructions to access your indicators on TradingView.
+            Your order has been received. You will receive a confirmation email with instructions to access your indicators on TradingView. You'll get indicator access within 24 hours.
           </p>
-          <Link href="/">
-            <Button className="mt-8" size="lg" data-testid="button-back-home">
-              Back to Home
-            </Button>
-          </Link>
+          <p className="mt-2 text-muted-foreground leading-relaxed">
+            Check your order status in <Link href="/dashboard" className="font-medium text-primary hover:underline">Profile → Dashboard</Link>, and feel free to contact Help/Support desk directly from there if you face any issues.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link href="/dashboard">
+              <Button size="lg" data-testid="button-go-dashboard">
+                Go to Dashboard
+              </Button>
+            </Link>
+            <Link href="/">
+              <Button variant="outline" size="lg" data-testid="button-back-home">
+                Back to Home
+              </Button>
+            </Link>
+          </div>
         </motion.div>
       </div>
     );
