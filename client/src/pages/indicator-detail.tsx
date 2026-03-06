@@ -113,13 +113,6 @@ export default function IndicatorDetail() {
     toast({ title: "Trial added", description: `${indicator.name} free trial has been added to your cart.` });
   };
 
-  const stats = [
-    { label: "Win Rate", value: indicator.winRate, color: "text-emerald-500 dark:text-emerald-400" },
-    { label: "Avg Return", value: indicator.avgReturn, color: "text-emerald-500 dark:text-emerald-400" },
-    { label: "Total Trades", value: indicator.totalTrades, color: "text-foreground" },
-    ...(isFree ? [] : [{ label: "Trial Period", value: `${indicator.trialDays} days`, color: "text-primary" }]),
-  ];
-
   const settingsBlocks = indicator.recommendedSettings
     ? indicator.recommendedSettings.split("\n").map((block) => {
         const colonIdx = block.indexOf(":");
@@ -225,17 +218,6 @@ export default function IndicatorDetail() {
           </div>
 
           <Separator className="my-10" />
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-testid="stats-grid">
-            {stats.map((stat) => (
-              <Card key={stat.label} className="border-card-border p-5">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">{stat.label}</p>
-                <p className={`mt-1 text-2xl font-bold ${stat.color}`} data-testid={`text-stat-${stat.label.toLowerCase().replace(/\s/g, "-")}`}>
-                  {stat.value || "N/A"}
-                </p>
-              </Card>
-            ))}
-          </div>
 
           {indicator.imageUrl && (
             <div className="mt-10">
