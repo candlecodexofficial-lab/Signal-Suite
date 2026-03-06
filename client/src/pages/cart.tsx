@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Trash2, ArrowLeft, ShoppingCart, ArrowRight, Clock, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/components/cart-provider";
+import { useAuth } from "@/components/auth-provider";
 import { motion, AnimatePresence } from "framer-motion";
 
 const durationOptions = [
@@ -18,6 +19,18 @@ const durationOptions = [
 
 export default function CartPage() {
   const { items, removeItem, updateDuration, totalPrice, clearCart } = useCart();
+  const { user, openAuthModal } = useAuth();
+  const [, navigate] = useLocation();
+
+  const handleProceed = () => {
+    if (user) {
+      navigate("/checkout");
+    } else {
+      openAuthModal({
+        onSuccess: () => navigate("/checkout"),
+      });
+    }
+  };
 
   if (items.length === 0) {
     return (
@@ -28,7 +41,7 @@ export default function CartPage() {
           </div>
           <h2 className="mt-6 text-2xl font-bold" data-testid="text-empty-cart">Your cart is empty</h2>
           <p className="mt-2 text-muted-foreground">Browse our collection of indicators and add them to your cart.</p>
-          <Link href="/">
+          <Link href="/indicators">
             <Button className="mt-6" data-testid="button-browse">
               <ArrowLeft className="mr-2 h-4 w-4" /> Browse Indicators
             </Button>
@@ -40,7 +53,7 @@ export default function CartPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-      <Link href="/">
+      <Link href="/indicators">
         <Button variant="ghost" size="sm" className="mb-6" data-testid="button-back">
           <ArrowLeft className="mr-2 h-4 w-4" /> Continue Shopping
         </Button>
@@ -165,11 +178,9 @@ export default function CartPage() {
                 <span className="text-xl font-bold" data-testid="text-total-price">${totalPrice.toFixed(2)}</span>
               </div>
 
-              <Link href="/checkout">
-                <Button className="mt-6 w-full" size="lg" data-testid="button-proceed">
-                  Proceed <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
+              <Button className="mt-6 w-full" size="lg" onClick={handleProceed} data-testid="button-proceed">
+                Proceed <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
             </Card>
           </div>
         </div>

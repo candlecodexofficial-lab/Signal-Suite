@@ -1,7 +1,7 @@
 import type { Express } from "express";
-import { createServer, type Server } from "http";
+import type { Server } from "http";
 import { storage } from "./storage";
-import { insertRegistrationSchema } from "@shared/schema";
+import { insertUserSchema } from "@shared/schema";
 import { seedDatabase } from "./seed";
 
 export async function registerRoutes(
@@ -23,35 +23,111 @@ export async function registerRoutes(
     res.json(indicator);
   });
 
-  app.post("/api/registrations", async (req, res) => {
-    const parsed = insertRegistrationSchema.safeParse(req.body);
+  app.get("/api/auth/me", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const user = await storage.getUserById(req.session.userId);
+    if (!user) {
+      req.session.destroy(() => {});
+      return res.status(401).json({ message: "User not found" });
+    }
+    res.json(user);
+  });
+
+  app.get("/api/auth/check-email", async (req, res) => {
+    const email = req.query.email as string;
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+    const user = await storage.getUserByEmail(email);
+    if (user) {
+      res.json({ exists: true, user: { firstName: user.firstName, lastName: user.lastName, username: user.username, mobileNumber: user.mobileNumber, tradingViewUsername: user.tradingViewUsername } });
+    } else {
+      res.json({ exists: false });
+    }
+  });
+
+  app.post("/api/auth/signup-or-login", async (req, res) => {
+    const parsed = insertUserSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });
     }
-    const registration = await storage.createRegistration(parsed.data);
-    res.status(201).json(registration);
+
+    const existing = await storage.getUserByEmail(parsed.data.email);
+    if (existing) {
+      req.session.userId = existing.id;
+      return res.json({ user: existing, isNewUser: false });
+    }
+
+    const user = await storage.createUser(parsed.data);
+    req.session.userId = user.id;
+    res.status(201).json({ user, isNewUser: true });
+  });
+
+  app.post("/api/auth/update", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const parsed = insertUserSchema.partial().safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });
+    }
+    const user = await storage.updateUser(req.session.userId, parsed.data);
+    res.json(user);
+  });
+
+  app.post("/api/auth/logout", async (req, res) => {
+    req.session.destroy(() => {});
+    res.json({ message: "Logged out" });
   });
 
   app.post("/api/orders", async (req, res) => {
-    const { registrationId, status, totalAmount, items } = req.body;
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
 
-    if (!registrationId || !items || !Array.isArray(items)) {
+    const { items } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: "Invalid order data" });
     }
 
-    const order = await storage.createOrder({
-      registrationId,
-      status: status || "pending",
-      totalAmount: totalAmount || "0",
-    });
+    let serverTotal = 0;
+    const validatedItems = [];
 
     for (const item of items) {
+      const indicator = await storage.getIndicatorById(item.indicatorId);
+      if (!indicator) {
+        return res.status(400).json({ message: `Indicator ${item.indicatorId} not found` });
+      }
+
+      const duration = Math.max(1, Math.min(12, parseInt(item.duration) || 1));
+      const isTrial = item.isTrial === true && indicator.tier === "premium";
+      const price = isTrial ? "0" : (parseFloat(indicator.price) * duration).toFixed(2);
+
+      if (!isTrial) {
+        serverTotal += parseFloat(price);
+      }
+
+      validatedItems.push({
+        indicatorId: indicator.id,
+        duration,
+        price,
+        isTrial,
+      });
+    }
+
+    const order = await storage.createOrder({
+      userId: req.session.userId,
+      status: "pending",
+      totalAmount: serverTotal.toFixed(2),
+    });
+
+    for (const vi of validatedItems) {
       await storage.createOrderItem({
         orderId: order.id,
-        indicatorId: item.indicatorId,
-        duration: item.duration,
-        price: item.price || "0",
-        isTrial: item.isTrial || false,
+        ...vi,
       });
     }
 

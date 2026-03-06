@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ArrowLeft, CheckCircle2, User, Mail, Phone, AtSign, Monitor } from "lucide-react";
+import { ArrowLeft, CheckCircle2, User, Mail, Phone, AtSign, Monitor, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,41 +8,60 @@ import { Badge } from "@/components/ui/badge";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertRegistrationSchema } from "@shared/schema";
-import type { InsertRegistration } from "@shared/schema";
+import { insertUserSchema } from "@shared/schema";
+import type { InsertUser } from "@shared/schema";
 import { useCart } from "@/components/cart-provider";
+import { useAuth } from "@/components/auth-provider";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Checkout() {
   const { items, totalPrice, clearCart } = useCart();
+  const { user, signupOrLogin, openAuthModal } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [orderComplete, setOrderComplete] = useState(false);
+  const [isEditing, setIsEditing] = useState(!user);
 
-  const form = useForm<InsertRegistration>({
-    resolver: zodResolver(insertRegistrationSchema),
+  const form = useForm<InsertUser>({
+    resolver: zodResolver(insertUserSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
-      username: "",
-      email: "",
-      mobileNumber: "",
-      tradingViewUsername: "",
+      firstName: user?.firstName || "",
+      lastName: user?.lastName || "",
+      username: user?.username || "",
+      email: user?.email || "",
+      mobileNumber: user?.mobileNumber || "",
+      tradingViewUsername: user?.tradingViewUsername || "",
     },
   });
 
+  useEffect(() => {
+    if (user) {
+      form.reset({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        username: user.username,
+        email: user.email,
+        mobileNumber: user.mobileNumber,
+        tradingViewUsername: user.tradingViewUsername,
+      });
+      setIsEditing(false);
+    }
+  }, [user, form]);
+
   const submitMutation = useMutation({
-    mutationFn: async (data: InsertRegistration) => {
-      const regRes = await apiRequest("POST", "/api/registrations", data);
-      const registration = await regRes.json();
+    mutationFn: async (data: InsertUser) => {
+      if (!user) {
+        await signupOrLogin(data);
+      } else if (isEditing) {
+        await apiRequest("POST", "/api/auth/update", data);
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      }
 
       const orderData = {
-        registrationId: registration.id,
-        status: "pending",
         totalAmount: totalPrice.toFixed(2),
         items: items.map((item) => ({
           indicatorId: item.indicatorId,
@@ -53,7 +72,6 @@ export default function Checkout() {
       };
 
       await apiRequest("POST", "/api/orders", orderData);
-      return registration;
     },
     onSuccess: () => {
       clearCart();
@@ -113,57 +131,125 @@ export default function Checkout() {
           Complete Your Order
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Fill in your details below to get access to your selected indicators.
+          {user
+            ? "Review your details below and place your order."
+            : "Fill in your details below to get access to your selected indicators."}
         </p>
 
         <div className="mt-8 flex flex-col gap-8 lg:flex-row">
           <div className="flex-1">
             <Card className="border-card-border p-6 sm:p-8" data-testid="registration-form">
-              <h2 className="text-lg font-semibold mb-6">Your Information</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold">Your Information</h2>
+                {user && !isEditing && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsEditing(true)}
+                    data-testid="button-edit-details"
+                  >
+                    <Pencil className="mr-2 h-3.5 w-3.5" /> Edit
+                  </Button>
+                )}
+              </div>
 
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit((data) => submitMutation.mutate(data))} className="space-y-5">
-                  <div className="grid gap-5 sm:grid-cols-2">
+              {user && !isEditing ? (
+                <div className="space-y-4" data-testid="user-details-display">
+                  <div className="grid gap-4 sm:grid-cols-2">
                     {formFields.map((field) => (
-                      <FormField
+                      <div
                         key={field.name}
-                        control={form.control}
-                        name={field.name}
-                        render={({ field: fieldProps }) => (
-                          <FormItem className={field.name === "email" || field.name === "tradingViewUsername" ? "sm:col-span-2" : ""}>
-                            <FormLabel>{field.label}</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <field.icon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                                <Input
-                                  {...fieldProps}
-                                  type={field.type}
-                                  placeholder={field.placeholder}
-                                  className="pl-10"
-                                  data-testid={`input-${field.name}`}
-                                />
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                        className={`rounded-md border bg-muted/50 px-4 py-3 ${field.name === "email" || field.name === "tradingViewUsername" ? "sm:col-span-2" : ""}`}
+                      >
+                        <p className="text-xs text-muted-foreground mb-0.5">{field.label}</p>
+                        <p className="text-sm font-medium" data-testid={`text-detail-${field.name}`}>
+                          {user[field.name as keyof typeof user] as string}
+                        </p>
+                      </div>
                     ))}
                   </div>
 
                   <Separator className="my-6" />
 
                   <Button
-                    type="submit"
                     size="lg"
                     className="w-full"
                     disabled={submitMutation.isPending}
+                    onClick={() => submitMutation.mutate(form.getValues())}
                     data-testid="button-submit-order"
                   >
-                    {submitMutation.isPending ? "Submitting..." : "Submit Order"}
+                    {submitMutation.isPending ? "Submitting..." : "Place Order"}
                   </Button>
-                </form>
-              </Form>
+                </div>
+              ) : (
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit((data) => submitMutation.mutate(data))} className="space-y-5">
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      {formFields.map((field) => (
+                        <FormField
+                          key={field.name}
+                          control={form.control}
+                          name={field.name}
+                          render={({ field: fieldProps }) => (
+                            <FormItem className={field.name === "email" || field.name === "tradingViewUsername" ? "sm:col-span-2" : ""}>
+                              <FormLabel>{field.label}</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <field.icon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                  <Input
+                                    {...fieldProps}
+                                    type={field.type}
+                                    placeholder={field.placeholder}
+                                    className="pl-10"
+                                    data-testid={`input-${field.name}`}
+                                  />
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ))}
+                    </div>
+
+                    <Separator className="my-6" />
+
+                    <div className="flex gap-3">
+                      {user && isEditing && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="lg"
+                          className="flex-1"
+                          onClick={() => {
+                            setIsEditing(false);
+                            form.reset({
+                              firstName: user.firstName,
+                              lastName: user.lastName,
+                              username: user.username,
+                              email: user.email,
+                              mobileNumber: user.mobileNumber,
+                              tradingViewUsername: user.tradingViewUsername,
+                            });
+                          }}
+                          data-testid="button-cancel-edit"
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                      <Button
+                        type="submit"
+                        size="lg"
+                        className="flex-1"
+                        disabled={submitMutation.isPending}
+                        data-testid="button-submit-order"
+                      >
+                        {submitMutation.isPending ? "Submitting..." : user ? "Update & Place Order" : "Submit Order"}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              )}
             </Card>
           </div>
 

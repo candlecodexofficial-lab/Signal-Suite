@@ -1,42 +1,65 @@
 # TradeVault - TradingView Indicators Marketplace
 
 ## Overview
-A premium web application for browsing and subscribing to TradingView indicators. Users can browse indicators, view details, add to cart with configurable durations, and complete registration to place orders.
+A premium web application for browsing and subscribing to TradingView indicators. Users can browse indicators organized by All/Free/Premium tiers, view detailed pages, add to cart with configurable subscription durations, sign up or log in via email-based detection, and place orders with auto-filled details.
 
 ## Tech Stack
 - **Frontend**: React + TypeScript, Wouter routing, TanStack Query, Framer Motion
-- **Backend**: Express.js, Drizzle ORM, PostgreSQL
+- **Backend**: Express.js, Drizzle ORM, PostgreSQL, express-session + connect-pg-simple
 - **Styling**: Tailwind CSS, Shadcn UI components
 - **Font**: Inter (sans), Playfair Display (serif), JetBrains Mono (mono)
 
 ## Architecture
-- `shared/schema.ts` - Data models (indicators, registrations, orders, orderItems)
-- `server/db.ts` - Database connection
-- `server/seed.ts` - Seed data for 6 indicators
+- `shared/schema.ts` - Data models (indicators, users, orders, orderItems)
+- `server/db.ts` - Database connection (exports pool + db)
+- `server/seed.ts` - Seed data for 8 indicators (6 premium, 2 free)
 - `server/storage.ts` - DatabaseStorage class implementing IStorage
-- `server/routes.ts` - API routes (/api/indicators, /api/registrations, /api/orders)
+- `server/routes.ts` - API routes (indicators, auth, orders)
+- `server/index.ts` - Express app setup with session middleware
+- `client/src/components/auth-provider.tsx` - Auth context (user state, signup/login/logout)
+- `client/src/components/auth-modal.tsx` - Signup/Login modal with email detection
 - `client/src/components/cart-provider.tsx` - Cart state with localStorage persistence
-- `client/src/components/navbar.tsx` - Top navigation with cart badge
+- `client/src/components/navbar.tsx` - Top navigation with auth state (Sign Up / avatar)
 - `client/src/components/theme-toggle.tsx` - Dark/light mode toggle
 - `client/src/components/indicator-card.tsx` - Card component for indicator grid
 
 ## Pages
-- `/` - Home page with hero, features, indicator grid with category filters
+- `/` - Home page with hero, features, CTA
+- `/indicators` - Indicators page with tier filters (All/Free/Premium)
 - `/indicator/:slug` - Indicator detail page with stats, video, features, description
-- `/cart` - Cart with duration selection per indicator
-- `/checkout` - Registration form + order submission
+- `/cart` - Cart with duration selection, smart proceed (auth check)
+- `/checkout` - Auto-filled form for logged-in users, registration form for guests
+
+## API Routes
+- `GET /api/indicators` - List all indicators
+- `GET /api/indicators/:slug` - Get indicator by slug
+- `GET /api/auth/me` - Get current authenticated user (401 if not)
+- `GET /api/auth/check-email?email=` - Check if email exists, returns user data if found
+- `POST /api/auth/signup-or-login` - Create or log in user by email detection
+- `POST /api/auth/update` - Update authenticated user profile
+- `POST /api/auth/logout` - Destroy session
+- `POST /api/orders` - Create order (requires auth)
 
 ## Database Tables
-- `indicators` - Product catalog (name, slug, category, price, features, stats)
-- `registrations` - User registration data (name, email, mobile, TradingView username)
-- `orders` - Order records (registrationId, status, totalAmount)
+- `indicators` - Product catalog (name, slug, category, tier, price, features, stats)
+- `users` - User accounts (name, email unique, username, mobile, TradingView username)
+- `orders` - Order records (userId, status, totalAmount)
 - `order_items` - Individual items in orders (indicatorId, duration, price, isTrial)
+- `session` - Express session store (auto-created by connect-pg-simple)
+
+## Auth Flow
+- Email-based detection: entering an existing email auto-fills the form (welcome back)
+- New email creates a new account on submit
+- Session-based persistence (30-day cookie)
+- Navbar shows "Sign Up" for guests, avatar+dropdown for logged-in users
+- Cart "Proceed" opens auth modal for guests, navigates directly for logged-in users
+- Checkout auto-fills and shows read-only details for logged-in users with "Edit" option
 
 ## Key Features
-- Category-based filtering on home page
-- Free trial option for every indicator
+- Three-tier system: Free indicators (green badge, $0) and Premium (amber badge, priced)
+- Free trial option for premium indicators
 - Cart with configurable duration (1-12 months)
-- Registration form with validation (email, mobile, required fields)
+- Smart auth: single form for signup + login
 - Dark/light mode toggle
 - Responsive design
 - Framer Motion animations

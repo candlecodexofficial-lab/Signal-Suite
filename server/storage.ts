@@ -1,7 +1,7 @@
 import { 
-  indicators, registrations, orders, orderItems,
+  indicators, users, orders, orderItems,
   type Indicator, type InsertIndicator,
-  type Registration, type InsertRegistration,
+  type User, type InsertUser,
   type Order, type InsertOrder,
   type OrderItem, type InsertOrderItem
 } from "@shared/schema";
@@ -13,7 +13,10 @@ export interface IStorage {
   getIndicatorBySlug(slug: string): Promise<Indicator | undefined>;
   getIndicatorById(id: number): Promise<Indicator | undefined>;
   createIndicator(indicator: InsertIndicator): Promise<Indicator>;
-  createRegistration(registration: InsertRegistration): Promise<Registration>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserById(id: number): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, data: Partial<InsertUser>): Promise<User>;
   createOrder(order: InsertOrder): Promise<Order>;
   createOrderItem(item: InsertOrderItem): Promise<OrderItem>;
 }
@@ -38,8 +41,23 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async createRegistration(registration: InsertRegistration): Promise<Registration> {
-    const [result] = await db.insert(registrations).values(registration).returning();
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [result] = await db.select().from(users).where(eq(users.email, email));
+    return result;
+  }
+
+  async getUserById(id: number): Promise<User | undefined> {
+    const [result] = await db.select().from(users).where(eq(users.id, id));
+    return result;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const [result] = await db.insert(users).values(user).returning();
+    return result;
+  }
+
+  async updateUser(id: number, data: Partial<InsertUser>): Promise<User> {
+    const [result] = await db.update(users).set(data).where(eq(users.id, id)).returning();
     return result;
   }
 

@@ -1,13 +1,23 @@
 import { Link, useLocation } from "wouter";
-import { ShoppingCart, TrendingUp, Menu, X } from "lucide-react";
+import { ShoppingCart, TrendingUp, Menu, X, LogOut, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useCart } from "@/components/cart-provider";
+import { useAuth } from "@/components/auth-provider";
 import { useState } from "react";
 
 export function Navbar() {
   const { itemCount } = useCart();
+  const { user, isLoading, openAuthModal, logout } = useAuth();
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -15,6 +25,10 @@ export function Navbar() {
     { href: "/", label: "Home" },
     { href: "/indicators", label: "Indicators" },
   ];
+
+  const initials = user
+    ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase()
+    : "";
 
   return (
     <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl" data-testid="navbar">
@@ -57,6 +71,51 @@ export function Navbar() {
                 )}
               </Button>
             </Link>
+
+            {!isLoading && !user && (
+              <Button
+                variant="default"
+                size="sm"
+                className="hidden md:inline-flex"
+                onClick={() => openAuthModal()}
+                data-testid="button-signup"
+              >
+                Sign Up
+              </Button>
+            )}
+
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full" data-testid="button-user-menu">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs font-medium">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <div className="px-2 py-1.5">
+                    <p className="text-sm font-medium" data-testid="text-user-name">
+                      {user.firstName} {user.lastName}
+                    </p>
+                    <p className="text-xs text-muted-foreground" data-testid="text-user-email">
+                      {user.email}
+                    </p>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => logout()}
+                    data-testid="button-logout"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
             <Button
               variant="ghost"
               size="icon"
@@ -85,6 +144,33 @@ export function Navbar() {
                 </Button>
               </Link>
             ))}
+            {!isLoading && !user && (
+              <Button
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => {
+                  setMobileOpen(false);
+                  openAuthModal();
+                }}
+                data-testid="button-mobile-signup"
+              >
+                Sign Up
+              </Button>
+            )}
+            {user && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-muted-foreground"
+                onClick={() => {
+                  setMobileOpen(false);
+                  logout();
+                }}
+                data-testid="button-mobile-logout"
+              >
+                <LogOut className="mr-2 h-4 w-4" /> Log out
+              </Button>
+            )}
           </div>
         </div>
       )}
