@@ -4,6 +4,7 @@ import {
   ArrowLeft, ShoppingCart, Play, CheckCircle2, TrendingUp, BarChart3,
   Target, Clock, Zap, Activity, Brain, Crown, Globe, Settings,
   LogIn, LogOut as LogOutIcon, Crosshair, Shield, ChevronRight,
+  Code2, CalendarDays, User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -159,12 +160,24 @@ export default function IndicatorDetail() {
                 {indicator.shortDescription}
               </p>
 
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                <span data-testid="text-version">Version 1.1 Beta</span>
-                <span className="text-border">·</span>
-                <span data-testid="text-updated">Last Updated — Mar 2026</span>
-                <span className="text-border">·</span>
-                <span data-testid="text-developer">Developed by <span className="font-medium text-foreground">Candle Codex</span></span>
+              <div className="mt-4 inline-flex flex-wrap items-center gap-x-5 gap-y-2 rounded-md border border-card-border bg-muted/40 px-4 py-2.5 text-sm">
+                <div className="flex items-center gap-1.5" data-testid="text-version">
+                  <Code2 className="h-3.5 w-3.5 text-primary/70" />
+                  <span className="text-muted-foreground">Version</span>
+                  <span className="font-medium">1.1 Beta</span>
+                </div>
+                <Separator orientation="vertical" className="h-4" />
+                <div className="flex items-center gap-1.5" data-testid="text-updated">
+                  <CalendarDays className="h-3.5 w-3.5 text-primary/70" />
+                  <span className="text-muted-foreground">Updated</span>
+                  <span className="font-medium">Mar 2026</span>
+                </div>
+                <Separator orientation="vertical" className="h-4" />
+                <div className="flex items-center gap-1.5" data-testid="text-developer">
+                  <User className="h-3.5 w-3.5 text-primary/70" />
+                  <span className="text-muted-foreground">By</span>
+                  <span className="font-medium">Candle Codex</span>
+                </div>
               </div>
 
               <div className="mt-6 flex flex-wrap items-center gap-3">

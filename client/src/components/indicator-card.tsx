@@ -1,8 +1,9 @@
 import { Link } from "wouter";
-import { ArrowUpRight, Crown } from "lucide-react";
+import { ArrowUpRight, Crown, Code2, CalendarDays } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/components/cart-provider";
 import type { Indicator } from "@shared/schema";
 
@@ -33,12 +34,22 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
           <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
             {indicator.shortDescription}
           </p>
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-            <span data-testid={`text-version-${indicator.id}`}>v1.1 Beta</span>
-            <span className="text-border">·</span>
-            <span data-testid={`text-updated-${indicator.id}`}>Updated Mar 2026</span>
-            <span className="text-border">·</span>
-            <span data-testid={`text-developer-${indicator.id}`}>Candle Codex</span>
+        </div>
+
+        <Separator />
+
+        <div className="grid grid-cols-3 gap-2 text-center text-[11px] text-muted-foreground">
+          <div data-testid={`text-version-${indicator.id}`}>
+            <Code2 className="mx-auto mb-0.5 h-3 w-3 opacity-60" />
+            <span className="font-medium text-foreground/80">v1.1 Beta</span>
+          </div>
+          <div data-testid={`text-updated-${indicator.id}`}>
+            <CalendarDays className="mx-auto mb-0.5 h-3 w-3 opacity-60" />
+            <span className="font-medium text-foreground/80">Mar 2026</span>
+          </div>
+          <div data-testid={`text-developer-${indicator.id}`}>
+            <span className="block mb-0.5 text-[10px] uppercase tracking-wider opacity-60">By</span>
+            <span className="font-medium text-foreground/80">Candle Codex</span>
           </div>
         </div>
 
