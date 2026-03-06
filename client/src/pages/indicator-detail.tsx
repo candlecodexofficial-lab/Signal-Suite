@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
-import { ArrowLeft, ShoppingCart, Play, CheckCircle2, TrendingUp, BarChart3, Target, Clock, Zap, Activity, Brain } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Play, CheckCircle2, TrendingUp, BarChart3, Target, Clock, Zap, Activity, Brain, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -66,15 +66,16 @@ export default function IndicatorDetail() {
   const gradient = categoryGradients[indicator.category] || "from-gray-600/20 to-slate-600/20";
   const Icon = categoryIcons[indicator.category] || TrendingUp;
   const inCart = isInCart(indicator.id);
+  const isFree = indicator.tier === "free";
 
   const handleAddToCart = () => {
     addItem({
       indicatorId: indicator.id,
       name: indicator.name,
       slug: indicator.slug,
-      price: indicator.price,
+      price: isFree ? "0" : indicator.price,
     });
-    toast({ title: "Added to cart", description: `${indicator.name} has been added to your cart.` });
+    toast({ title: isFree ? "Access added" : "Added to cart", description: `${indicator.name} has been added to your cart.` });
   };
 
   const handleGetTrial = () => {
@@ -97,7 +98,7 @@ export default function IndicatorDetail() {
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-        <Link href="/">
+        <Link href="/indicators">
           <Button variant="ghost" size="sm" className="mb-6" data-testid="button-back">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Indicators
           </Button>
@@ -108,7 +109,16 @@ export default function IndicatorDetail() {
             <div className="flex-1">
               <div className="flex flex-wrap items-start gap-3">
                 <Badge variant="secondary" data-testid="badge-category">{indicator.category}</Badge>
-                {indicator.trialDays && (
+                {isFree ? (
+                  <Badge variant="secondary" className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" data-testid="badge-tier">
+                    Free
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20" data-testid="badge-tier">
+                    <Crown className="mr-1 h-3 w-3" /> Premium
+                  </Badge>
+                )}
+                {!isFree && indicator.trialDays && (
                   <Badge variant="outline" data-testid="badge-trial">
                     <Clock className="mr-1 h-3 w-3" /> {indicator.trialDays}-day free trial
                   </Badge>
@@ -123,10 +133,14 @@ export default function IndicatorDetail() {
               </p>
 
               <div className="mt-6 flex flex-wrap items-center gap-3">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-bold" data-testid="text-price">${indicator.price}</span>
-                  <span className="text-muted-foreground">/month</span>
-                </div>
+                {isFree ? (
+                  <span className="text-3xl font-bold text-emerald-500 dark:text-emerald-400" data-testid="text-price">Free</span>
+                ) : (
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-bold" data-testid="text-price">${indicator.price}</span>
+                    <span className="text-muted-foreground">/month</span>
+                  </div>
+                )}
               </div>
 
               <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -136,6 +150,10 @@ export default function IndicatorDetail() {
                       <ShoppingCart className="mr-2 h-4 w-4" /> Go to Cart
                     </Button>
                   </Link>
+                ) : isFree ? (
+                  <Button size="lg" onClick={handleAddToCart} data-testid="button-add-to-cart">
+                    Get Free Access
+                  </Button>
                 ) : (
                   <>
                     <Button size="lg" onClick={handleAddToCart} data-testid="button-add-to-cart">
@@ -221,7 +239,9 @@ export default function IndicatorDetail() {
           <div className="mt-12 rounded-lg border bg-card p-6 sm:p-8 text-center">
             <h3 className="text-xl font-semibold">Ready to Get Started?</h3>
             <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">
-              Try {indicator.name} free for {indicator.trialDays} days. No credit card required.
+              {isFree
+                ? `Get free access to ${indicator.name} and start trading with confidence.`
+                : `Try ${indicator.name} free for ${indicator.trialDays} days. No credit card required.`}
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               {inCart ? (
@@ -230,6 +250,10 @@ export default function IndicatorDetail() {
                     <ShoppingCart className="mr-2 h-4 w-4" /> View Cart
                   </Button>
                 </Link>
+              ) : isFree ? (
+                <Button size="lg" onClick={handleAddToCart} data-testid="button-bottom-add">
+                  Get Free Access
+                </Button>
               ) : (
                 <>
                   <Button size="lg" onClick={handleAddToCart} data-testid="button-bottom-add">

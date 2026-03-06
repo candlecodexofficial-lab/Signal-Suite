@@ -6,18 +6,22 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import type { Indicator } from "@shared/schema";
 
-const categories = ["All", "Trend Following", "Momentum", "Volume Analysis", "Volatility", "Smart Money", "Support/Resistance"];
+const tiers = [
+  { key: "All", label: "All" },
+  { key: "Free", label: "Free" },
+  { key: "Premium", label: "Premium" },
+];
 
 export default function IndicatorsPage() {
-  const [activeCategory, setActiveCategory] = useState("All");
+  const [activeTier, setActiveTier] = useState("All");
 
   const { data: indicators, isLoading } = useQuery<Indicator[]>({
     queryKey: ["/api/indicators"],
   });
 
-  const filtered = activeCategory === "All"
+  const filtered = activeTier === "All"
     ? indicators
-    : indicators?.filter((i) => i.category === activeCategory);
+    : indicators?.filter((i) => i.tier.toLowerCase() === activeTier.toLowerCase());
 
   return (
     <div className="min-h-screen">
@@ -32,15 +36,15 @@ export default function IndicatorsPage() {
         </div>
 
         <div className="mb-8 flex flex-wrap gap-2" data-testid="category-filters">
-          {categories.map((cat) => (
+          {tiers.map((tier) => (
             <Button
-              key={cat}
-              variant={activeCategory === cat ? "default" : "outline"}
+              key={tier.key}
+              variant={activeTier === tier.key ? "default" : "outline"}
               size="sm"
-              onClick={() => setActiveCategory(cat)}
-              data-testid={`button-category-${cat.toLowerCase().replace(/[/\s]/g, "-")}`}
+              onClick={() => setActiveTier(tier.key)}
+              data-testid={`button-category-${tier.key.toLowerCase()}`}
             >
-              {cat}
+              {tier.label}
             </Button>
           ))}
         </div>

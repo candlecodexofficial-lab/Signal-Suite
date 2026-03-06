@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { ArrowUpRight, Zap, TrendingUp, BarChart3, Activity, Brain, Target } from "lucide-react";
+import { ArrowUpRight, Zap, TrendingUp, BarChart3, Activity, Brain, Target, Crown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,11 +29,21 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
   const gradient = categoryGradients[indicator.category] || "from-gray-600/20 to-slate-600/20";
   const Icon = categoryIcons[indicator.category] || TrendingUp;
   const inCart = isInCart(indicator.id);
+  const isFree = indicator.tier === "free";
 
   return (
     <Card className="group flex flex-col border-card-border transition-colors duration-200 hover-elevate" data-testid={`card-indicator-${indicator.id}`}>
       <div className={`relative flex items-center justify-center rounded-t-md bg-gradient-to-br ${gradient} p-8`}>
         <Icon className="h-12 w-12 text-foreground/60" />
+        {isFree ? (
+          <Badge variant="secondary" className="absolute left-3 top-3 text-xs bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" data-testid={`badge-tier-${indicator.id}`}>
+            Free
+          </Badge>
+        ) : (
+          <Badge variant="secondary" className="absolute left-3 top-3 text-xs bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20" data-testid={`badge-tier-${indicator.id}`}>
+            <Crown className="mr-1 h-3 w-3" /> Premium
+          </Badge>
+        )}
         <Badge variant="secondary" className="absolute right-3 top-3 text-xs">
           {indicator.category}
         </Badge>
@@ -72,11 +82,17 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
 
         <div className="mt-auto flex items-center justify-between gap-2 pt-2">
           <div>
-            <span className="text-2xl font-bold tracking-tight" data-testid={`text-price-${indicator.id}`}>${indicator.price}</span>
-            <span className="text-sm text-muted-foreground">/mo</span>
+            {isFree ? (
+              <span className="text-2xl font-bold tracking-tight text-emerald-500 dark:text-emerald-400" data-testid={`text-price-${indicator.id}`}>Free</span>
+            ) : (
+              <>
+                <span className="text-2xl font-bold tracking-tight" data-testid={`text-price-${indicator.id}`}>${indicator.price}</span>
+                <span className="text-sm text-muted-foreground">/mo</span>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-2">
-            {!inCart && (
+            {!inCart && !isFree && (
               <Button
                 variant="outline"
                 size="sm"
@@ -93,6 +109,25 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
                 data-testid={`button-trial-${indicator.id}`}
               >
                 Free Trial
+              </Button>
+            )}
+            {!inCart && isFree && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  addItem({
+                    indicatorId: indicator.id,
+                    name: indicator.name,
+                    slug: indicator.slug,
+                    price: "0",
+                  });
+                }}
+                data-testid={`button-get-free-${indicator.id}`}
+              >
+                Get Access
               </Button>
             )}
             <Link href={`/indicator/${indicator.slug}`}>

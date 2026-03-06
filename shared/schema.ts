@@ -9,6 +9,7 @@ export const indicators = pgTable("indicators", {
   shortDescription: text("short_description").notNull(),
   description: text("description").notNull(),
   category: text("category").notNull(),
+  tier: text("tier").notNull().default("premium"),
   price: text("price").notNull(),
   videoUrl: text("video_url"),
   imageUrl: text("image_url"),
