@@ -217,21 +217,33 @@ export default function IndicatorDetail() {
 
             <div className="w-full lg:w-96 shrink-0">
               {indicator.videoUrl ? (
-                <div className="relative aspect-video rounded-lg border bg-card overflow-hidden">
-                  <iframe
-                    src={indicator.videoUrl}
-                    className="h-full w-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    title={`${indicator.name} introduction`}
-                    data-testid="video-hero"
-                  />
+                <div>
+                  <div className="relative aspect-video rounded-lg border bg-card overflow-hidden">
+                    <iframe
+                      src={indicator.videoUrl}
+                      className="h-full w-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      title={`${indicator.name} introduction`}
+                      data-testid="video-hero"
+                    />
+                  </div>
+                  <div className="mt-3">
+                    <p className="text-sm font-semibold" data-testid="text-video-label">Video Tutorial</p>
+                    <p className="text-xs text-muted-foreground">Learn how to use {indicator.name}</p>
+                  </div>
                 </div>
               ) : (
-                <div className={`flex aspect-video items-center justify-center rounded-lg bg-gradient-to-br ${gradient} border overflow-hidden`}>
-                  <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                    <Play className="h-12 w-12" />
-                    <p className="text-sm font-medium">Video Coming Soon</p>
+                <div>
+                  <div className={`flex aspect-video items-center justify-center rounded-lg bg-gradient-to-br ${gradient} border overflow-hidden`}>
+                    <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                      <Play className="h-12 w-12" />
+                      <p className="text-sm font-medium">Video Coming Soon</p>
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <p className="text-sm font-semibold" data-testid="text-video-label">Video Tutorial</p>
+                    <p className="text-xs text-muted-foreground">Learn how to use {indicator.name}</p>
                   </div>
                 </div>
               )}
