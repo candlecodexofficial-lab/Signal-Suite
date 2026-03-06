@@ -13,13 +13,27 @@ import {
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useCart } from "@/components/cart-provider";
 import { useAuth } from "@/components/auth-provider";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { motion, useAnimation } from "framer-motion";
 
 export function Navbar() {
   const { itemCount } = useCart();
   const { user, isLoading, openAuthModal, logout } = useAuth();
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const cartControls = useAnimation();
+
+  useEffect(() => {
+    const handleCartAdded = () => {
+      cartControls.start({
+        scale: [1, 1.35, 0.9, 1.15, 1],
+        rotate: [0, -10, 10, -5, 0],
+        transition: { duration: 0.5, ease: "easeInOut" },
+      });
+    };
+    window.addEventListener("cart-item-added", handleCartAdded);
+    return () => window.removeEventListener("cart-item-added", handleCartAdded);
+  }, [cartControls]);
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -59,17 +73,19 @@ export function Navbar() {
           <div className="flex items-center gap-1">
             <ThemeToggle />
             <Link href="/cart">
-              <Button variant="ghost" size="icon" className="relative" data-testid="button-cart">
-                <ShoppingCart className="h-4 w-4" />
-                {itemCount > 0 && (
-                  <Badge
-                    variant="default"
-                    className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full p-0 text-[10px]"
-                  >
-                    {itemCount}
-                  </Badge>
-                )}
-              </Button>
+              <motion.div animate={cartControls}>
+                <Button variant="ghost" size="icon" className="relative" data-testid="button-cart">
+                  <ShoppingCart className="h-4 w-4" />
+                  {itemCount > 0 && (
+                    <Badge
+                      variant="default"
+                      className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full p-0 text-[10px]"
+                    >
+                      {itemCount}
+                    </Badge>
+                  )}
+                </Button>
+              </motion.div>
             </Link>
 
             {!isLoading && !user && (

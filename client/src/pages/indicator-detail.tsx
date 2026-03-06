@@ -101,6 +101,7 @@ export default function IndicatorDetail() {
       slug: indicator.slug,
       price: isFree ? "0" : indicator.price,
     });
+    window.dispatchEvent(new CustomEvent("cart-item-added"));
     toast({ title: isFree ? "Access added" : "Added to cart", description: `${indicator.name} has been added to your cart.` });
   };
 
@@ -111,7 +112,8 @@ export default function IndicatorDetail() {
       slug: indicator.slug,
       price: indicator.price,
     });
-    toast({ title: "Trial added", description: `${indicator.name} free trial has been added to your cart.` });
+    window.dispatchEvent(new CustomEvent("cart-item-added"));
+    toast({ title: "Trial added", description: `${indicator.name} trial has been added to your cart.` });
   };
 
   const settingsBlocks = indicator.recommendedSettings
