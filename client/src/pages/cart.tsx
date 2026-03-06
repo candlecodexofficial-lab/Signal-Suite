@@ -73,10 +73,8 @@ export default function CartPage() {
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <Link href={`/indicator/${item.slug}`}>
-                            <span className="text-base font-semibold hover:underline" data-testid={`text-item-name-${item.indicatorId}`}>
-                              {item.name}
-                            </span>
+                          <Link href={`/indicator/${item.slug}`} className="text-base font-semibold hover:underline" data-testid={`text-item-name-${item.indicatorId}`}>
+                            {item.name}
                           </Link>
                           {item.isTrial ? (
                             <Badge variant="secondary" className="text-xs" data-testid={`badge-trial-${item.indicatorId}`}>
