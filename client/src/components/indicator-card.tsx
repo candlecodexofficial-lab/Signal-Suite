@@ -63,52 +63,52 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
           </div>
         </div>
 
-        <div className="mt-auto flex items-center justify-end gap-2 pt-2">
-          <div className="flex items-center gap-2">
-            {!inCart && !isFree && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  addTrial({
-                    indicatorId: indicator.id,
-                    name: indicator.name,
-                    slug: indicator.slug,
-                    price: indicator.price,
-                  });
-                }}
-                data-testid={`button-trial-${indicator.id}`}
-              >
-                Get Trial
-              </Button>
-            )}
-            {!inCart && isFree && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  addItem({
-                    indicatorId: indicator.id,
-                    name: indicator.name,
-                    slug: indicator.slug,
-                    price: "0",
-                  });
-                }}
-                data-testid={`button-get-free-${indicator.id}`}
-              >
-                Get Access
-              </Button>
-            )}
-            <Link href={`/indicator/${indicator.slug}`}>
-              <Button size="sm" data-testid={`button-view-${indicator.id}`}>
-                View <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
-              </Button>
-            </Link>
-          </div>
+        <div className="mt-auto grid grid-cols-2 gap-2 pt-2">
+          {!inCart && !isFree && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                addTrial({
+                  indicatorId: indicator.id,
+                  name: indicator.name,
+                  slug: indicator.slug,
+                  price: indicator.price,
+                });
+              }}
+              data-testid={`button-trial-${indicator.id}`}
+            >
+              Get Trial
+            </Button>
+          )}
+          {!inCart && isFree && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                addItem({
+                  indicatorId: indicator.id,
+                  name: indicator.name,
+                  slug: indicator.slug,
+                  price: "0",
+                });
+              }}
+              data-testid={`button-get-free-${indicator.id}`}
+            >
+              Get Access
+            </Button>
+          )}
+          <Link href={`/indicator/${indicator.slug}`} className="w-full">
+            <Button size="sm" className="w-full" data-testid={`button-view-${indicator.id}`}>
+              View <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+            </Button>
+          </Link>
         </div>
       </div>
     </Card>
