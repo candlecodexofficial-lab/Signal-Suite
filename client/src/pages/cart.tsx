@@ -89,6 +89,13 @@ export default function CartPage() {
                           <Link href={`/indicator/${item.slug}`} className="text-base font-semibold hover:underline" data-testid={`text-item-name-${item.indicatorId}`}>
                             {item.name}
                           </Link>
+                          <Badge
+                            variant="outline"
+                            className={`text-xs ${item.version === "strategy" ? "border-primary/40 text-primary" : ""}`}
+                            data-testid={`badge-version-${item.indicatorId}`}
+                          >
+                            {item.version === "strategy" ? "Strategy Version" : "Indicator Version"}
+                          </Badge>
                           {item.isTrial ? (
                             <Badge variant="secondary" className="text-xs" data-testid={`badge-trial-${item.indicatorId}`}>
                               <Clock className="mr-1 h-3 w-3" /> 15-Day Trial
@@ -180,8 +187,13 @@ export default function CartPage() {
 
               <div className="space-y-3">
                 {items.map((item) => (
-                  <div key={item.indicatorId} className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground truncate mr-2">{item.name}</span>
+                  <div key={item.indicatorId} className="flex items-center justify-between text-sm gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-muted-foreground truncate">{item.name}</p>
+                      <p className="text-[10px] text-muted-foreground/70">
+                        {item.version === "strategy" ? "Strategy Version" : "Indicator Version"}
+                      </p>
+                    </div>
                     <span className="shrink-0 font-medium">
                       {item.isTrial ? `₹${Number(item.price).toLocaleString("en-IN")}` : parseFloat(item.price) === 0 ? "Free" : `₹${(parseFloat(item.price) * item.duration).toLocaleString("en-IN")}`}
                     </span>

@@ -55,6 +55,7 @@ export const orderItems = pgTable("order_items", {
   duration: integer("duration").notNull(),
   price: text("price").notNull(),
   isTrial: boolean("is_trial").default(false),
+  version: text("version").default("indicator"),
 });
 
 export const insertIndicatorSchema = createInsertSchema(indicators).omit({ id: true });

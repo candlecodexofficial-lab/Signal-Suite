@@ -1,17 +1,18 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
 import {
   ArrowLeft, ShoppingCart, Play, CheckCircle2, TrendingUp, BarChart3,
   Target, Clock, Zap, Activity, Brain, Crown, Globe, Settings,
   LogIn, LogOut as LogOutIcon, Crosshair, Shield, ChevronRight,
-  Code2, CalendarDays, User,
+  Code2, CalendarDays, User, LineChart, Cpu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { useCart } from "@/components/cart-provider";
+import { useCart, computeStrategyPrice, type ProductVersion } from "@/components/cart-provider";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import type { Indicator } from "@shared/schema";
@@ -57,8 +58,9 @@ function TextBlock({ content }: { content: string }) {
 
 export default function IndicatorDetail() {
   const params = useParams<{ slug: string }>();
-  const { addItem, addTrial, isInCart } = useCart();
+  const { addItem, addTrial, isInCart, getCartItem } = useCart();
   const { toast } = useToast();
+  const [selectedVersion, setSelectedVersion] = useState<ProductVersion>("indicator");
 
   const { data: indicator, isLoading } = useQuery<Indicator>({
     queryKey: ["/api/indicators", params.slug],
@@ -92,17 +94,27 @@ export default function IndicatorDetail() {
   const gradient = categoryGradients[indicator.category] || "from-gray-600/20 to-slate-600/20";
   const Icon = categoryIcons[indicator.category] || TrendingUp;
   const inCart = isInCart(indicator.id);
+  const cartItem = getCartItem(indicator.id);
   const isFree = indicator.tier === "free";
+
+  const indicatorVersionPrice = isFree ? "0" : indicator.price;
+  const strategyVersionPrice = computeStrategyPrice(indicator.price);
+  const activePrice = selectedVersion === "strategy" ? strategyVersionPrice : indicatorVersionPrice;
+  const versionLabel = selectedVersion === "strategy" ? "Strategy Version" : "Indicator Version";
 
   const handleAddToCart = () => {
     addItem({
       indicatorId: indicator.id,
       name: indicator.name,
       slug: indicator.slug,
-      price: isFree ? "0" : indicator.price,
+      price: activePrice,
+      version: selectedVersion,
     });
     window.dispatchEvent(new CustomEvent("cart-item-added"));
-    toast({ title: isFree ? "Access added" : "Added to cart", description: `${indicator.name} has been added to your cart.` });
+    toast({
+      title: parseFloat(activePrice) === 0 ? "Access added" : "Added to cart",
+      description: `${indicator.name} (${versionLabel}) has been added to your cart.`,
+    });
   };
 
   const handleGetTrial = () => {
@@ -111,9 +123,13 @@ export default function IndicatorDetail() {
       name: indicator.name,
       slug: indicator.slug,
       price: indicator.price,
+      version: selectedVersion,
     });
     window.dispatchEvent(new CustomEvent("cart-item-added"));
-    toast({ title: "Trial added", description: `${indicator.name} trial has been added to your cart.` });
+    toast({
+      title: "Trial added",
+      description: `${indicator.name} (${versionLabel}) trial has been added to your cart.`,
+    });
   };
 
   const settingsBlocks = indicator.recommendedSettings
@@ -182,36 +198,107 @@ export default function IndicatorDetail() {
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-wrap items-center gap-3">
-                {isFree ? (
-                  <span className="text-3xl font-bold text-emerald-500 dark:text-emerald-400" data-testid="text-price">Free</span>
-                ) : (
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold" data-testid="text-price">₹{Number(indicator.price).toLocaleString("en-IN")}</span>
-                    <span className="text-muted-foreground">/month</span>
-                  </div>
-                )}
+              <div className="mt-6">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                  Choose your version
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedVersion("indicator")}
+                    className={`text-left rounded-lg border p-4 transition-all hover-elevate ${
+                      selectedVersion === "indicator"
+                        ? "border-primary bg-primary/5 ring-1 ring-primary/40"
+                        : "border-card-border"
+                    }`}
+                    data-testid="button-version-indicator"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <LineChart className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-semibold">Indicator Version</span>
+                      </div>
+                      {selectedVersion === "indicator" && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                    </div>
+                    <div className="mt-3">
+                      {isFree ? (
+                        <span className="text-2xl font-bold text-emerald-500 dark:text-emerald-400" data-testid="text-price-indicator">
+                          Free
+                        </span>
+                      ) : (
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-2xl font-bold" data-testid="text-price-indicator">
+                            ₹{Number(indicatorVersionPrice).toLocaleString("en-IN")}
+                          </span>
+                          <span className="text-xs text-muted-foreground">/month</span>
+                        </div>
+                      )}
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Visual signals on your TradingView chart.
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedVersion("strategy")}
+                    className={`text-left rounded-lg border p-4 transition-all hover-elevate ${
+                      selectedVersion === "strategy"
+                        ? "border-primary bg-primary/5 ring-1 ring-primary/40"
+                        : "border-card-border"
+                    }`}
+                    data-testid="button-version-strategy"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Cpu className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-semibold">Strategy Version</span>
+                      </div>
+                      {selectedVersion === "strategy" && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                    </div>
+                    <div className="mt-3">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-bold" data-testid="text-price-strategy">
+                          ₹{Number(strategyVersionPrice).toLocaleString("en-IN")}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{isFree ? "/lifetime" : "/month"}</span>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Backtestable strategy with auto entries, exits & alerts.
+                    </p>
+                  </button>
+                </div>
               </div>
 
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 {inCart ? (
-                  <Link href="/cart">
-                    <Button size="lg" data-testid="button-go-to-cart">
-                      <ShoppingCart className="mr-2 h-4 w-4" /> Go to Cart
-                    </Button>
-                  </Link>
-                ) : isFree ? (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20" data-testid="badge-in-cart-version">
+                      <CheckCircle2 className="mr-1 h-3 w-3" />
+                      Added: {cartItem?.version === "strategy" ? "Strategy Version" : "Indicator Version"}
+                      {cartItem?.isTrial ? " · Trial" : ""}
+                    </Badge>
+                    <Link href="/cart">
+                      <Button size="lg" data-testid="button-go-to-cart">
+                        <ShoppingCart className="mr-2 h-4 w-4" /> Go to Cart
+                      </Button>
+                    </Link>
+                  </div>
+                ) : parseFloat(activePrice) === 0 ? (
                   <Button size="lg" onClick={handleAddToCart} data-testid="button-add-to-cart">
                     Get Free Access
                   </Button>
                 ) : (
                   <>
                     <Button size="lg" onClick={handleAddToCart} data-testid="button-add-to-cart">
-                      <ShoppingCart className="mr-2 h-4 w-4" /> Add to Cart
+                      <ShoppingCart className="mr-2 h-4 w-4" /> Add to Cart · {versionLabel}
                     </Button>
-                    <Button variant="outline" size="lg" onClick={handleGetTrial} data-testid="button-get-trial">
-                      Get Trial
-                    </Button>
+                    {!isFree && (
+                      <Button variant="outline" size="lg" onClick={handleGetTrial} data-testid="button-get-trial">
+                        Get Trial
+                      </Button>
+                    )}
                   </>
                 )}
               </div>

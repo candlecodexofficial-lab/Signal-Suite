@@ -27,6 +27,7 @@ interface DashboardOrderItem {
   duration: number;
   price: string;
   isTrial: boolean | null;
+  version: string | null;
   indicatorName: string;
   indicatorSlug: string;
   indicatorCategory: string;
@@ -177,7 +178,9 @@ export default function Dashboard() {
                             {badge.label}
                           </Badge>
                         </div>
-                        <p className="mt-1 text-sm text-muted-foreground">{item.indicatorCategory}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {item.indicatorCategory} · {item.version === "strategy" ? "Strategy Version" : "Indicator Version"}
+                        </p>
                       </div>
                       <div className="text-right shrink-0">
                         {item.daysRemaining !== null ? (

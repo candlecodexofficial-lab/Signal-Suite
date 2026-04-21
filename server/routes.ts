@@ -152,7 +152,22 @@ export async function registerRoutes(
 
       const duration = Math.max(1, Math.min(12, parseInt(item.duration) || 1));
       const isTrial = item.isTrial === true && indicator.tier === "premium";
-      const price = isTrial ? "5250" : (parseFloat(indicator.price) * duration).toFixed(2);
+      const version: "indicator" | "strategy" = item.version === "strategy" ? "strategy" : "indicator";
+
+      const indicatorBase = parseFloat(indicator.price);
+      const baseUnit =
+        version === "strategy"
+          ? indicatorBase === 0
+            ? 499
+            : Math.round(indicatorBase * 1.35)
+          : indicatorBase;
+
+      let price: string;
+      if (isTrial) {
+        price = version === "strategy" ? Math.round(5250 * 1.35).toFixed(2) : "5250";
+      } else {
+        price = (baseUnit * duration).toFixed(2);
+      }
 
       serverTotal += parseFloat(price);
 
@@ -161,6 +176,7 @@ export async function registerRoutes(
         duration,
         price,
         isTrial,
+        version,
       });
     }
 

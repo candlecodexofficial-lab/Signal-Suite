@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 
+export type ProductVersion = "indicator" | "strategy";
+
 export interface CartItem {
   indicatorId: number;
   name: string;
@@ -7,18 +9,30 @@ export interface CartItem {
   price: string;
   duration: number;
   isTrial: boolean;
+  version: ProductVersion;
+}
+
+export function computeStrategyPrice(indicatorPrice: string): string {
+  const p = parseFloat(indicatorPrice);
+  if (p === 0) return "499";
+  return Math.round(p * 1.35).toString();
+}
+
+export function computeTrialPrice(version: ProductVersion): string {
+  return version === "strategy" ? Math.round(5250 * 1.35).toString() : "5250";
 }
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (item: Omit<CartItem, "duration" | "isTrial">) => void;
-  addTrial: (item: Omit<CartItem, "duration" | "isTrial">) => void;
+  addItem: (item: Omit<CartItem, "duration" | "isTrial" | "version"> & { version?: ProductVersion }) => void;
+  addTrial: (item: Omit<CartItem, "duration" | "isTrial" | "version"> & { version?: ProductVersion }) => void;
   removeItem: (indicatorId: number) => void;
   updateDuration: (indicatorId: number, duration: number) => void;
   clearCart: () => void;
   totalPrice: number;
   itemCount: number;
   isInCart: (indicatorId: number) => boolean;
+  getCartItem: (indicatorId: number) => CartItem | undefined;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -36,17 +50,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("cart", JSON.stringify(items));
   }, [items]);
 
-  const addItem = useCallback((item: Omit<CartItem, "duration" | "isTrial">) => {
+  const addItem = useCallback((item: Omit<CartItem, "duration" | "isTrial" | "version"> & { version?: ProductVersion }) => {
     setItems((prev) => {
       if (prev.some((i) => i.indicatorId === item.indicatorId)) return prev;
-      return [...prev, { ...item, duration: 1, isTrial: false }];
+      return [...prev, { ...item, version: item.version ?? "indicator", duration: 1, isTrial: false }];
     });
   }, []);
 
-  const addTrial = useCallback((item: Omit<CartItem, "duration" | "isTrial">) => {
+  const addTrial = useCallback((item: Omit<CartItem, "duration" | "isTrial" | "version"> & { version?: ProductVersion }) => {
     setItems((prev) => {
       if (prev.some((i) => i.indicatorId === item.indicatorId)) return prev;
-      return [...prev, { ...item, price: "5250", duration: 1, isTrial: true }];
+      const version: ProductVersion = item.version ?? "indicator";
+      return [...prev, { ...item, version, price: computeTrialPrice(version), duration: 1, isTrial: true }];
     });
   }, []);
 
@@ -74,9 +89,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [items]
   );
 
+  const getCartItem = useCallback(
+    (indicatorId: number) => items.find((i) => i.indicatorId === indicatorId),
+    [items]
+  );
+
   return (
     <CartContext.Provider
-      value={{ items, addItem, addTrial, removeItem, updateDuration, clearCart, totalPrice, itemCount, isInCart }}
+      value={{ items, addItem, addTrial, removeItem, updateDuration, clearCart, totalPrice, itemCount, isInCart, getCartItem }}
     >
       {children}
     </CartContext.Provider>

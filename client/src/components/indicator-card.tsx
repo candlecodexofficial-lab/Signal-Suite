@@ -5,13 +5,14 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { useCart } from "@/components/cart-provider";
+import { useCart, computeStrategyPrice } from "@/components/cart-provider";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Indicator } from "@shared/schema";
 
 export function IndicatorCard({ indicator }: { indicator: Indicator }) {
-  const { addItem, addTrial, isInCart } = useCart();
+  const { addItem, addTrial, isInCart, getCartItem } = useCart();
   const inCart = isInCart(indicator.id);
+  const cartItem = getCartItem(indicator.id);
   const isFree = indicator.tier === "free";
   const [justAdded, setJustAdded] = useState(false);
 
@@ -139,9 +140,10 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
           {inCart && !justAdded ? (
             <div className="mt-auto pt-2">
               <div className="flex items-center gap-2 mb-2">
-                <Check className="h-3.5 w-3.5 text-primary" />
+                <Check className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span className="text-xs font-medium text-primary" data-testid={`text-in-cart-${indicator.id}`}>
-                  {isFree ? "Selected for Get Access" : "Selected for Get Trial"} — Added to Cart
+                  {cartItem?.version === "strategy" ? "Strategy Version" : "Indicator Version"}
+                  {cartItem?.isTrial ? " · Trial" : ""} — Added to Cart
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2">
