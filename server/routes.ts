@@ -23,6 +23,29 @@ export async function registerRoutes(
     res.json(indicator);
   });
 
+  app.get("/api/access/:indicatorId", async (req, res) => {
+    const indicatorId = parseInt(req.params.indicatorId);
+    if (!req.session.userId || isNaN(indicatorId)) {
+      return res.json({ hasAccess: false });
+    }
+    const userOrders = await storage.getUserOrders(req.session.userId);
+    for (const order of userOrders) {
+      if (order.status !== "approved") continue;
+      const items = await storage.getOrderItems(order.id);
+      const match = items.find((i) => i.indicatorId === indicatorId);
+      if (!match) continue;
+      if (!order.approvedAt) {
+        return res.json({ hasAccess: true });
+      }
+      const expiry = new Date(order.approvedAt);
+      expiry.setMonth(expiry.getMonth() + match.duration);
+      if (expiry.getTime() > Date.now()) {
+        return res.json({ hasAccess: true });
+      }
+    }
+    res.json({ hasAccess: false });
+  });
+
   app.get("/api/auth/me", async (req, res) => {
     if (!req.session.userId) {
       return res.status(401).json({ message: "Not authenticated" });

@@ -5,7 +5,7 @@ import {
   ArrowLeft, ShoppingCart, Play, CheckCircle2, TrendingUp, BarChart3,
   Target, Clock, Zap, Activity, Brain, Crown, Globe, Settings,
   LogIn, LogOut as LogOutIcon, Crosshair, Shield, ChevronRight,
-  Code2, CalendarDays, User, LineChart, Cpu, Check,
+  Code2, CalendarDays, User, LineChart, Cpu, Check, Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +47,20 @@ function SectionHeading({ icon: Icon, title, id }: { icon: typeof TrendingUp; ti
   );
 }
 
+function LockedPlaceholder({ message }: { message: string }) {
+  return (
+    <Card className="border-dashed border-card-border bg-muted/30 p-6" data-testid="locked-placeholder">
+      <div className="flex flex-col items-center justify-center gap-2 py-4 text-center">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+          <Lock className="h-4 w-4 text-muted-foreground" />
+        </div>
+        <p className="text-sm font-medium">Locked content</p>
+        <p className="max-w-md text-xs text-muted-foreground">{message}</p>
+      </div>
+    </Card>
+  );
+}
+
 function TextBlock({ content }: { content: string }) {
   return (
     <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
@@ -66,6 +80,13 @@ export default function IndicatorDetail() {
   const { data: indicator, isLoading } = useQuery<Indicator>({
     queryKey: ["/api/indicators", params.slug],
   });
+
+  const { data: access } = useQuery<{ hasAccess: boolean }>({
+    queryKey: ["/api/access", indicator?.id],
+    enabled: !!indicator?.id,
+  });
+  const hasAccess = access?.hasAccess === true;
+  const lockMessage = "Unlocks automatically once your purchase is approved.";
 
   if (isLoading) {
     return (
@@ -437,86 +458,102 @@ export default function IndicatorDetail() {
           {indicator.signalLogic && (
             <div className="mt-10">
               <SectionHeading icon={Brain} title="Signal Logic & Methodology" id="text-signal-logic-title" />
-              <Card className="border-card-border p-6" data-testid="signal-logic-content">
-                <TextBlock content={indicator.signalLogic} />
-              </Card>
+              {hasAccess ? (
+                <Card className="border-card-border p-6" data-testid="signal-logic-content">
+                  <TextBlock content={indicator.signalLogic} />
+                </Card>
+              ) : (
+                <LockedPlaceholder message={lockMessage} />
+              )}
             </div>
           )}
 
           {(indicator.entryConditions || indicator.exitConditions) && (
             <div className="mt-10">
               <SectionHeading icon={Crosshair} title="Entry & Exit Rules" id="text-entry-exit-title" />
-              <div className="grid gap-4 lg:grid-cols-2">
-                {indicator.entryConditions && (
-                  <Card className="border-card-border p-6" data-testid="entry-conditions">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500/10">
-                        <LogIn className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+              {hasAccess ? (
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {indicator.entryConditions && (
+                    <Card className="border-card-border p-6" data-testid="entry-conditions">
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500/10">
+                          <LogIn className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <h3 className="font-semibold text-emerald-600 dark:text-emerald-400">Entry Conditions</h3>
                       </div>
-                      <h3 className="font-semibold text-emerald-600 dark:text-emerald-400">Entry Conditions</h3>
-                    </div>
-                    <TextBlock content={indicator.entryConditions} />
-                  </Card>
-                )}
-                {indicator.exitConditions && (
-                  <Card className="border-card-border p-6" data-testid="exit-conditions">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-red-500/10">
-                        <LogOutIcon className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+                      <TextBlock content={indicator.entryConditions} />
+                    </Card>
+                  )}
+                  {indicator.exitConditions && (
+                    <Card className="border-card-border p-6" data-testid="exit-conditions">
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-red-500/10">
+                          <LogOutIcon className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+                        </div>
+                        <h3 className="font-semibold text-red-600 dark:text-red-400">Exit Conditions</h3>
                       </div>
-                      <h3 className="font-semibold text-red-600 dark:text-red-400">Exit Conditions</h3>
-                    </div>
-                    <TextBlock content={indicator.exitConditions} />
-                  </Card>
-                )}
-              </div>
+                      <TextBlock content={indicator.exitConditions} />
+                    </Card>
+                  )}
+                </div>
+              ) : (
+                <LockedPlaceholder message={lockMessage} />
+              )}
             </div>
           )}
 
           {(indicator.stopLossStrategy || indicator.targetStrategy) && (
             <div className="mt-10">
               <SectionHeading icon={Shield} title="Risk Management" id="text-risk-title" />
-              <div className="grid gap-4 lg:grid-cols-2">
-                {indicator.stopLossStrategy && (
-                  <Card className="border-card-border p-6" data-testid="stop-loss-strategy">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-red-500/10">
-                        <Shield className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+              {hasAccess ? (
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {indicator.stopLossStrategy && (
+                    <Card className="border-card-border p-6" data-testid="stop-loss-strategy">
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-red-500/10">
+                          <Shield className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+                        </div>
+                        <h3 className="font-semibold">Stop-Loss Strategy</h3>
                       </div>
-                      <h3 className="font-semibold">Stop-Loss Strategy</h3>
-                    </div>
-                    <TextBlock content={indicator.stopLossStrategy} />
-                  </Card>
-                )}
-                {indicator.targetStrategy && (
-                  <Card className="border-card-border p-6" data-testid="target-strategy">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500/10">
-                        <Target className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <TextBlock content={indicator.stopLossStrategy} />
+                    </Card>
+                  )}
+                  {indicator.targetStrategy && (
+                    <Card className="border-card-border p-6" data-testid="target-strategy">
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500/10">
+                          <Target className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <h3 className="font-semibold">Target & Take-Profit</h3>
                       </div>
-                      <h3 className="font-semibold">Target & Take-Profit</h3>
-                    </div>
-                    <TextBlock content={indicator.targetStrategy} />
-                  </Card>
-                )}
-              </div>
+                      <TextBlock content={indicator.targetStrategy} />
+                    </Card>
+                  )}
+                </div>
+              ) : (
+                <LockedPlaceholder message={lockMessage} />
+              )}
             </div>
           )}
 
           {settingsBlocks.length > 0 && (
             <div className="mt-10">
               <SectionHeading icon={Settings} title="Recommended Settings" id="text-settings-title" />
-              <div className="grid gap-3 sm:grid-cols-2" data-testid="settings-grid">
-                {settingsBlocks.map((block, i) => (
-                  <Card key={i} className="border-card-border p-5" data-testid={`settings-block-${i}`}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <ChevronRight className="h-4 w-4 text-primary shrink-0" />
-                      <h4 className="text-sm font-semibold">{block.title}</h4>
-                    </div>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{block.detail}</p>
-                  </Card>
-                ))}
-              </div>
+              {hasAccess ? (
+                <div className="grid gap-3 sm:grid-cols-2" data-testid="settings-grid">
+                  {settingsBlocks.map((block, i) => (
+                    <Card key={i} className="border-card-border p-5" data-testid={`settings-block-${i}`}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <ChevronRight className="h-4 w-4 text-primary shrink-0" />
+                        <h4 className="text-sm font-semibold">{block.title}</h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{block.detail}</p>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <LockedPlaceholder message={lockMessage} />
+              )}
             </div>
           )}
 
