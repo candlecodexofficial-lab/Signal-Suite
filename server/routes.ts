@@ -6,11 +6,20 @@ import { seedDatabase } from "./seed";
 import { hashPassword, verifyPassword } from "./auth";
 import type { User } from "@shared/schema";
 import { sendOrderApprovedEmail, sendOrderRejectedEmail } from "./email";
+import rateLimit from "express-rate-limit";
 
 function sanitizeUser(user: User) {
   const { passwordHash: _ph, ...safe } = user;
   return safe;
 }
+
+const authEnumerationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { message: "Too many requests. Please try again later." },
+});
 
 function getAdminEmails(): string[] {
   const raw = process.env.ADMIN_EMAILS || "";
@@ -91,7 +100,7 @@ export async function registerRoutes(
     res.json({ ...sanitizeUser(user), isAdmin });
   });
 
-  app.get("/api/auth/check-email", async (req, res) => {
+  app.get("/api/auth/check-email", authEnumerationLimiter, async (req, res) => {
     const email = req.query.email as string;
     if (!email) {
       return res.status(400).json({ message: "Email is required" });
@@ -114,7 +123,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/auth/signup", async (req, res) => {
+  app.post("/api/auth/signup", authEnumerationLimiter, async (req, res) => {
     const parsed = signupSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });
@@ -132,7 +141,7 @@ export async function registerRoutes(
     res.status(201).json({ user: sanitizeUser(user), isNewUser: true });
   });
 
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", authEnumerationLimiter, async (req, res) => {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });
