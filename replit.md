@@ -35,7 +35,7 @@ A premium web application for browsing and subscribing to TradingView indicators
 - `GET /api/indicators` - List all indicators
 - `GET /api/indicators/:slug` - Get indicator by slug
 - `GET /api/auth/me` - Get current authenticated user (401 if not)
-- `GET /api/auth/check-email?email=` - Check if email exists, returns user data if found
+- `GET /api/auth/check-email?email=` - Check if an account exists for the email; returns only `{ exists: boolean }`
 - `POST /api/auth/signup-or-login` - Create or log in user by email detection
 - `POST /api/auth/update` - Update authenticated user profile
 - `POST /api/auth/logout` - Destroy session

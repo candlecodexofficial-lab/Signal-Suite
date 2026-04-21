@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema } from "@shared/schema";
+import { z } from "zod";
 import { seedDatabase } from "./seed";
 
 function getAdminEmails(): string[] {
@@ -89,14 +90,19 @@ export async function registerRoutes(
       return res.status(400).json({ message: "Email is required" });
     }
     const user = await storage.getUserByEmail(email);
-    if (user) {
-      res.json({ exists: true, user: { firstName: user.firstName, lastName: user.lastName, username: user.username, mobileNumber: user.mobileNumber, tradingViewUsername: user.tradingViewUsername } });
-    } else {
-      res.json({ exists: false });
-    }
+    res.json({ exists: !!user });
   });
 
   app.post("/api/auth/signup-or-login", async (req, res) => {
+    const emailOnly = z.object({ email: z.string().email() }).safeParse(req.body);
+    if (emailOnly.success) {
+      const existing = await storage.getUserByEmail(emailOnly.data.email);
+      if (existing) {
+        req.session.userId = existing.id;
+        return res.json({ user: existing, isNewUser: false });
+      }
+    }
+
     const parsed = insertUserSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });

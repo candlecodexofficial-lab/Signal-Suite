@@ -53,16 +53,7 @@ export function AuthModal() {
       const data = await res.json();
       setEmailChecked(email);
 
-      if (data.exists && data.user) {
-        setIsReturningUser(true);
-        form.setValue("firstName", data.user.firstName);
-        form.setValue("lastName", data.user.lastName);
-        form.setValue("username", data.user.username);
-        form.setValue("mobileNumber", data.user.mobileNumber);
-        form.setValue("tradingViewUsername", data.user.tradingViewUsername);
-      } else {
-        setIsReturningUser(false);
-      }
+      setIsReturningUser(!!data.exists);
     } catch {
       // ignore
     }
@@ -71,7 +62,8 @@ export function AuthModal() {
   const onSubmit = async (data: InsertUser) => {
     setIsSubmitting(true);
     try {
-      const result = await signupOrLogin(data);
+      const payload = isReturningUser ? ({ email: data.email } as InsertUser) : data;
+      const result = await signupOrLogin(payload);
       toast({
         title: result.isNewUser ? "Account created" : "Welcome back!",
         description: result.isNewUser
@@ -109,7 +101,7 @@ export function AuthModal() {
           </DialogTitle>
           <DialogDescription>
             {isReturningUser
-              ? "We found your account. Confirm your details to continue."
+              ? "We found your account. Click Log In to continue."
               : "Enter your details to get started with TradeVault."}
           </DialogDescription>
         </DialogHeader>
@@ -117,14 +109,26 @@ export function AuthModal() {
         {isReturningUser && (
           <div className="flex items-center gap-2 rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
-            <span>Account found! Your details have been auto-filled.</span>
+            <span>Account found! Click Log In to continue.</span>
           </div>
         )}
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={(e) => {
+              if (isReturningUser) {
+                e.preventDefault();
+                form.trigger("email").then((ok) => {
+                  if (ok) onSubmit(form.getValues());
+                });
+              } else {
+                form.handleSubmit(onSubmit)(e);
+              }
+            }}
+            className="space-y-4"
+          >
             <div className="grid gap-4 sm:grid-cols-2">
-              {formFields.map((field) => (
+              {formFields.filter((f) => !isReturningUser || f.name === "email").map((field) => (
                 <FormField
                   key={field.name}
                   control={form.control}
