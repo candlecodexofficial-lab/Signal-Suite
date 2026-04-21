@@ -5,6 +5,7 @@ import { insertUserSchema, signupSchema, loginSchema } from "@shared/schema";
 import { seedDatabase } from "./seed";
 import { hashPassword, verifyPassword } from "./auth";
 import type { User } from "@shared/schema";
+import { sendOrderApprovedEmail, sendOrderRejectedEmail } from "./email";
 
 function sanitizeUser(user: User) {
   const { passwordHash: _ph, ...safe } = user;
@@ -382,6 +383,33 @@ export async function registerRoutes(
     if (!existing) return res.status(404).json({ message: "Order not found" });
     const approvedAt = status === "approved" ? new Date() : null;
     const updated = await storage.updateOrderStatus(id, status, approvedAt);
+
+    if (
+      (status === "approved" || status === "rejected") &&
+      existing.status !== status
+    ) {
+      try {
+        const buyer = await storage.getUserById(updated.userId);
+        if (buyer?.email) {
+          const items = await storage.getOrderItems(updated.id);
+          const enrichedItems = await Promise.all(
+            items.map(async (item) => {
+              const indicator = await storage.getIndicatorById(item.indicatorId);
+              return { ...item, indicator };
+            })
+          );
+          const payload = { buyer, order: updated, items: enrichedItems };
+          const sender =
+            status === "approved" ? sendOrderApprovedEmail : sendOrderRejectedEmail;
+          sender(payload).catch((err) =>
+            console.error("[email] Unhandled status email error:", err)
+          );
+        }
+      } catch (err) {
+        console.error("[email] Failed to dispatch status email:", err);
+      }
+    }
+
     res.json(updated);
   });
 
