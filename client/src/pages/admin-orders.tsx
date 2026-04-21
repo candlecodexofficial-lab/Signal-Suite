@@ -285,7 +285,7 @@ export default function AdminOrders() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {orders.map((order) => (
+          {sortedOrders.map((order) => (
             <Card
               key={order.id}
               className="border-card-border p-4 hover-elevate cursor-pointer"
