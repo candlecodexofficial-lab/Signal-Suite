@@ -13,6 +13,10 @@ export interface IStorage {
   getIndicatorBySlug(slug: string): Promise<Indicator | undefined>;
   getIndicatorById(id: number): Promise<Indicator | undefined>;
   createIndicator(indicator: InsertIndicator): Promise<Indicator>;
+  updateIndicator(id: number, data: Partial<InsertIndicator>): Promise<Indicator>;
+  deleteIndicator(id: number): Promise<void>;
+  getAllOrders(): Promise<Order[]>;
+  getAllOrderItems(): Promise<OrderItem[]>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserById(id: number): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
@@ -46,6 +50,23 @@ export class DatabaseStorage implements IStorage {
   async createIndicator(indicator: InsertIndicator): Promise<Indicator> {
     const [result] = await db.insert(indicators).values(indicator).returning();
     return result;
+  }
+
+  async updateIndicator(id: number, data: Partial<InsertIndicator>): Promise<Indicator> {
+    const [result] = await db.update(indicators).set(data).where(eq(indicators.id, id)).returning();
+    return result;
+  }
+
+  async deleteIndicator(id: number): Promise<void> {
+    await db.delete(indicators).where(eq(indicators.id, id));
+  }
+
+  async getAllOrders(): Promise<Order[]> {
+    return db.select().from(orders).orderBy(desc(orders.createdAt));
+  }
+
+  async getAllOrderItems(): Promise<OrderItem[]> {
+    return db.select().from(orderItems);
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
