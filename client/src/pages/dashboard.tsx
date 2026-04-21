@@ -179,7 +179,7 @@ export default function Dashboard() {
                           </Badge>
                         </div>
                         <p className="mt-1 text-sm text-muted-foreground">
-                          {item.indicatorCategory} · {item.version === "strategy" ? "Strategy Version" : "Indicator Version"}
+                          {item.indicatorCategory} · {item.version === "strategy" ? "Strategy" : "Indicator"}
                         </p>
                       </div>
                       <div className="text-right shrink-0">

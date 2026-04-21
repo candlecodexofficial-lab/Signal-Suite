@@ -22,10 +22,12 @@ export function computeTrialPrice(version: ProductVersion): string {
   return version === "strategy" ? Math.round(5250 * 1.35).toString() : "5250";
 }
 
+export type AddResult = { ok: true } | { ok: false; reason: "exists" | "mixed"; cartVersion?: ProductVersion };
+
 interface CartContextType {
   items: CartItem[];
-  addItem: (item: Omit<CartItem, "duration" | "isTrial" | "version"> & { version?: ProductVersion }) => void;
-  addTrial: (item: Omit<CartItem, "duration" | "isTrial" | "version"> & { version?: ProductVersion }) => void;
+  addItem: (item: Omit<CartItem, "duration" | "isTrial" | "version"> & { version?: ProductVersion }) => AddResult;
+  addTrial: (item: Omit<CartItem, "duration" | "isTrial" | "version"> & { version?: ProductVersion }) => AddResult;
   removeItem: (indicatorId: number) => void;
   updateDuration: (indicatorId: number, duration: number) => void;
   clearCart: () => void;
@@ -33,6 +35,8 @@ interface CartContextType {
   itemCount: number;
   isInCart: (indicatorId: number) => boolean;
   getCartItem: (indicatorId: number) => CartItem | undefined;
+  cartVersion: ProductVersion | null;
+  canAddVersion: (version: ProductVersion) => boolean;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -50,20 +54,44 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("cart", JSON.stringify(items));
   }, [items]);
 
-  const addItem = useCallback((item: Omit<CartItem, "duration" | "isTrial" | "version"> & { version?: ProductVersion }) => {
-    setItems((prev) => {
-      if (prev.some((i) => i.indicatorId === item.indicatorId)) return prev;
-      return [...prev, { ...item, version: item.version ?? "indicator", duration: 1, isTrial: false }];
-    });
-  }, []);
+  const evaluateAdd = (prev: CartItem[], indicatorId: number, version: ProductVersion): AddResult => {
+    if (prev.some((i) => i.indicatorId === indicatorId)) {
+      return { ok: false, reason: "exists" };
+    }
+    const existingVersion = prev[0]?.version;
+    if (existingVersion && existingVersion !== version) {
+      return { ok: false, reason: "mixed", cartVersion: existingVersion };
+    }
+    return { ok: true };
+  };
 
-  const addTrial = useCallback((item: Omit<CartItem, "duration" | "isTrial" | "version"> & { version?: ProductVersion }) => {
-    setItems((prev) => {
-      if (prev.some((i) => i.indicatorId === item.indicatorId)) return prev;
-      const version: ProductVersion = item.version ?? "indicator";
-      return [...prev, { ...item, version, price: computeTrialPrice(version), duration: 1, isTrial: true }];
-    });
-  }, []);
+  const addItem = useCallback((item: Omit<CartItem, "duration" | "isTrial" | "version"> & { version?: ProductVersion }): AddResult => {
+    const version: ProductVersion = item.version ?? "indicator";
+    const result = evaluateAdd(items, item.indicatorId, version);
+    if (result.ok) {
+      setItems((prev) => {
+        if (evaluateAdd(prev, item.indicatorId, version).ok) {
+          return [...prev, { ...item, version, duration: 1, isTrial: false }];
+        }
+        return prev;
+      });
+    }
+    return result;
+  }, [items]);
+
+  const addTrial = useCallback((item: Omit<CartItem, "duration" | "isTrial" | "version"> & { version?: ProductVersion }): AddResult => {
+    const version: ProductVersion = item.version ?? "indicator";
+    const result = evaluateAdd(items, item.indicatorId, version);
+    if (result.ok) {
+      setItems((prev) => {
+        if (evaluateAdd(prev, item.indicatorId, version).ok) {
+          return [...prev, { ...item, version, price: computeTrialPrice(version), duration: 1, isTrial: true }];
+        }
+        return prev;
+      });
+    }
+    return result;
+  }, [items]);
 
   const removeItem = useCallback((indicatorId: number) => {
     setItems((prev) => prev.filter((i) => i.indicatorId !== indicatorId));
@@ -94,9 +122,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [items]
   );
 
+  const cartVersion: ProductVersion | null = items.length > 0 ? items[0].version : null;
+
+  const canAddVersion = useCallback(
+    (version: ProductVersion) => cartVersion === null || cartVersion === version,
+    [cartVersion]
+  );
+
   return (
     <CartContext.Provider
-      value={{ items, addItem, addTrial, removeItem, updateDuration, clearCart, totalPrice, itemCount, isInCart, getCartItem }}
+      value={{ items, addItem, addTrial, removeItem, updateDuration, clearCart, totalPrice, itemCount, isInCart, getCartItem, cartVersion, canAddVersion }}
     >
       {children}
     </CartContext.Provider>

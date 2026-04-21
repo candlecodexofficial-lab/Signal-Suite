@@ -5,16 +5,19 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { useCart, computeStrategyPrice } from "@/components/cart-provider";
+import { useCart } from "@/components/cart-provider";
+import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Indicator } from "@shared/schema";
 
 export function IndicatorCard({ indicator }: { indicator: Indicator }) {
-  const { addItem, addTrial, isInCart, getCartItem } = useCart();
+  const { addItem, addTrial, isInCart, getCartItem, canAddVersion, cartVersion } = useCart();
+  const { toast } = useToast();
   const inCart = isInCart(indicator.id);
   const cartItem = getCartItem(indicator.id);
   const isFree = indicator.tier === "free";
   const [justAdded, setJustAdded] = useState(false);
+  const blockedByMix = !canAddVersion("indicator");
 
   const triggerAddAnimation = () => {
     setJustAdded(true);
@@ -22,27 +25,43 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
     setTimeout(() => setJustAdded(false), 1500);
   };
 
+  const showMixToast = () => {
+    toast({
+      variant: "destructive",
+      title: "Can't mix Indicators and Strategies",
+      description: `Your cart already has ${cartVersion === "strategy" ? "Strategies" : "Indicators"}. Clear your cart or check out first.`,
+    });
+  };
+
   const handleTrial = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addTrial({
+    const result = addTrial({
       indicatorId: indicator.id,
       name: indicator.name,
       slug: indicator.slug,
       price: indicator.price,
     });
+    if (!result.ok) {
+      if (result.reason === "mixed") showMixToast();
+      return;
+    }
     triggerAddAnimation();
   };
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addItem({
+    const result = addItem({
       indicatorId: indicator.id,
       name: indicator.name,
       slug: indicator.slug,
       price: isFree ? "0" : indicator.price,
     });
+    if (!result.ok) {
+      if (result.reason === "mixed") showMixToast();
+      return;
+    }
     triggerAddAnimation();
   };
 
@@ -142,7 +161,7 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
               <div className="flex items-center gap-2 mb-2">
                 <Check className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span className="text-xs font-medium text-primary" data-testid={`text-in-cart-${indicator.id}`}>
-                  {cartItem?.version === "strategy" ? "Strategy Version" : "Indicator Version"}
+                  {cartItem?.version === "strategy" ? "Strategy" : "Indicator"}
                   {cartItem?.isTrial ? " · Trial" : ""} — Added to Cart
                 </span>
               </div>
@@ -160,34 +179,43 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
               </div>
             </div>
           ) : (
-            <div className="mt-auto grid grid-cols-2 gap-2 pt-2">
-              {!isFree && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={handleTrial}
-                  data-testid={`button-trial-${indicator.id}`}
-                >
-                  Get Trial
-                </Button>
+            <div className="mt-auto pt-2">
+              {blockedByMix && (
+                <p className="mb-2 text-[10.5px] leading-tight text-amber-600 dark:text-amber-400" data-testid={`text-mix-warn-${indicator.id}`}>
+                  Cart has Strategies — open this indicator to switch versions.
+                </p>
               )}
-              {isFree && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={handleAdd}
-                  data-testid={`button-get-free-${indicator.id}`}
-                >
-                  Get Access
-                </Button>
-              )}
-              <Link href={`/indicator/${indicator.slug}`} className="w-full">
-                <Button size="sm" className="w-full" data-testid={`button-view-${indicator.id}`}>
-                  View <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
-                </Button>
-              </Link>
+              <div className="grid grid-cols-2 gap-2">
+                {!isFree && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={handleTrial}
+                    disabled={blockedByMix}
+                    data-testid={`button-trial-${indicator.id}`}
+                  >
+                    Get Trial
+                  </Button>
+                )}
+                {isFree && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={handleAdd}
+                    disabled={blockedByMix}
+                    data-testid={`button-get-free-${indicator.id}`}
+                  >
+                    Get Access
+                  </Button>
+                )}
+                <Link href={`/indicator/${indicator.slug}`} className="w-full">
+                  <Button size="sm" className="w-full" data-testid={`button-view-${indicator.id}`}>
+                    View <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+              </div>
             </div>
           )}
         </div>

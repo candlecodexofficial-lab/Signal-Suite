@@ -5,7 +5,7 @@ import {
   ArrowLeft, ShoppingCart, Play, CheckCircle2, TrendingUp, BarChart3,
   Target, Clock, Zap, Activity, Brain, Crown, Globe, Settings,
   LogIn, LogOut as LogOutIcon, Crosshair, Shield, ChevronRight,
-  Code2, CalendarDays, User, LineChart, Cpu,
+  Code2, CalendarDays, User, LineChart, Cpu, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useCart, computeStrategyPrice, type ProductVersion } from "@/components/cart-provider";
+import { AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import type { Indicator } from "@shared/schema";
@@ -58,7 +59,7 @@ function TextBlock({ content }: { content: string }) {
 
 export default function IndicatorDetail() {
   const params = useParams<{ slug: string }>();
-  const { addItem, addTrial, isInCart, getCartItem } = useCart();
+  const { addItem, addTrial, isInCart, getCartItem, cartVersion, canAddVersion } = useCart();
   const { toast } = useToast();
   const [selectedVersion, setSelectedVersion] = useState<ProductVersion>("indicator");
 
@@ -100,16 +101,25 @@ export default function IndicatorDetail() {
   const indicatorVersionPrice = isFree ? "0" : indicator.price;
   const strategyVersionPrice = computeStrategyPrice(indicator.price);
   const activePrice = selectedVersion === "strategy" ? strategyVersionPrice : indicatorVersionPrice;
-  const versionLabel = selectedVersion === "strategy" ? "Strategy Version" : "Indicator Version";
+  const versionLabel = selectedVersion === "strategy" ? "Strategy" : "Indicator";
+  const conflict = !canAddVersion(selectedVersion);
 
   const handleAddToCart = () => {
-    addItem({
+    const result = addItem({
       indicatorId: indicator.id,
       name: indicator.name,
       slug: indicator.slug,
       price: activePrice,
       version: selectedVersion,
     });
+    if (!result.ok && result.reason === "mixed") {
+      toast({
+        variant: "destructive",
+        title: "Can't mix Indicators and Strategies",
+        description: `Your cart already has ${result.cartVersion === "strategy" ? "Strategies" : "Indicators"}. Clear your cart or check out first.`,
+      });
+      return;
+    }
     window.dispatchEvent(new CustomEvent("cart-item-added"));
     toast({
       title: parseFloat(activePrice) === 0 ? "Access added" : "Added to cart",
@@ -118,13 +128,21 @@ export default function IndicatorDetail() {
   };
 
   const handleGetTrial = () => {
-    addTrial({
+    const result = addTrial({
       indicatorId: indicator.id,
       name: indicator.name,
       slug: indicator.slug,
       price: indicator.price,
       version: selectedVersion,
     });
+    if (!result.ok && result.reason === "mixed") {
+      toast({
+        variant: "destructive",
+        title: "Can't mix Indicators and Strategies",
+        description: `Your cart already has ${result.cartVersion === "strategy" ? "Strategies" : "Indicators"}. Clear your cart or check out first.`,
+      });
+      return;
+    }
     window.dispatchEvent(new CustomEvent("cart-item-added"));
     toast({
       title: "Trial added",
@@ -199,76 +217,91 @@ export default function IndicatorDetail() {
               </div>
 
               <div className="mt-6">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                  Choose your version
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedVersion("indicator")}
-                    className={`text-left rounded-lg border p-4 transition-all hover-elevate ${
-                      selectedVersion === "indicator"
-                        ? "border-primary bg-primary/5 ring-1 ring-primary/40"
-                        : "border-card-border"
-                    }`}
-                    data-testid="button-version-indicator"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <LineChart className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-semibold">Indicator Version</span>
-                      </div>
-                      {selectedVersion === "indicator" && <CheckCircle2 className="h-4 w-4 text-primary" />}
-                    </div>
-                    <div className="mt-3">
-                      {isFree ? (
-                        <span className="text-2xl font-bold text-emerald-500 dark:text-emerald-400" data-testid="text-price-indicator">
+                <div className="mb-2.5 flex items-center justify-between">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    Choose Version
+                  </p>
+                  {cartVersion && (
+                    <span className="text-[10px] text-muted-foreground" data-testid="text-cart-version-hint">
+                      Cart: {cartVersion === "strategy" ? "Strategies" : "Indicators"}
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label="Select version">
+                  {([
+                    {
+                      key: "indicator" as ProductVersion,
+                      label: "Indicator",
+                      icon: LineChart,
+                      tagline: "Chart signals",
+                      priceNode: isFree ? (
+                        <span className="text-base font-bold text-emerald-500 dark:text-emerald-400" data-testid="text-price-indicator">
                           Free
                         </span>
                       ) : (
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-2xl font-bold" data-testid="text-price-indicator">
+                        <div className="flex items-baseline gap-0.5">
+                          <span className="text-base font-bold tracking-tight" data-testid="text-price-indicator">
                             ₹{Number(indicatorVersionPrice).toLocaleString("en-IN")}
                           </span>
-                          <span className="text-xs text-muted-foreground">/month</span>
+                          <span className="text-[10px] text-muted-foreground">/mo</span>
                         </div>
-                      )}
-                    </div>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Visual signals on your TradingView chart.
-                    </p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSelectedVersion("strategy")}
-                    className={`text-left rounded-lg border p-4 transition-all hover-elevate ${
-                      selectedVersion === "strategy"
-                        ? "border-primary bg-primary/5 ring-1 ring-primary/40"
-                        : "border-card-border"
-                    }`}
-                    data-testid="button-version-strategy"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Cpu className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-semibold">Strategy Version</span>
-                      </div>
-                      {selectedVersion === "strategy" && <CheckCircle2 className="h-4 w-4 text-primary" />}
-                    </div>
-                    <div className="mt-3">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-2xl font-bold" data-testid="text-price-strategy">
-                          ₹{Number(strategyVersionPrice).toLocaleString("en-IN")}
-                        </span>
-                        <span className="text-xs text-muted-foreground">{isFree ? "/lifetime" : "/month"}</span>
-                      </div>
-                    </div>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Backtestable strategy with auto entries, exits & alerts.
-                    </p>
-                  </button>
+                      ),
+                      testId: "button-version-indicator",
+                    },
+                    {
+                      key: "strategy" as ProductVersion,
+                      label: "Strategy",
+                      icon: Cpu,
+                      tagline: "Auto entries & alerts",
+                      priceNode: (
+                        <div className="flex items-baseline gap-0.5">
+                          <span className="text-base font-bold tracking-tight" data-testid="text-price-strategy">
+                            ₹{Number(strategyVersionPrice).toLocaleString("en-IN")}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">{isFree ? "/life" : "/mo"}</span>
+                        </div>
+                      ),
+                      testId: "button-version-strategy",
+                    },
+                  ]).map(({ key, label, icon: Icon, tagline, priceNode, testId }) => {
+                    const active = selectedVersion === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => setSelectedVersion(key)}
+                        className={`group relative text-left rounded-lg border p-3 transition-all hover-elevate ${
+                          active
+                            ? "border-primary/60 bg-primary/[0.04] shadow-[0_0_0_1px_hsl(var(--primary)/0.35)]"
+                            : "border-card-border"
+                        }`}
+                        data-testid={testId}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <Icon className={`h-3.5 w-3.5 ${active ? "text-primary" : "text-muted-foreground"}`} />
+                            <span className="text-[13px] font-semibold leading-none">{label}</span>
+                          </div>
+                          <div className={`flex h-4 w-4 items-center justify-center rounded-full border transition-colors ${active ? "border-primary bg-primary" : "border-muted-foreground/30"}`}>
+                            {active && <Check className="h-2.5 w-2.5 text-primary-foreground" strokeWidth={3} />}
+                          </div>
+                        </div>
+                        <div className="mt-2">{priceNode}</div>
+                        <p className="mt-0.5 text-[10.5px] leading-tight text-muted-foreground">{tagline}</p>
+                      </button>
+                    );
+                  })}
                 </div>
+                {conflict && (
+                  <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/[0.06] p-2.5" data-testid="alert-mixed-cart">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+                    <p className="text-[11.5px] leading-snug text-amber-700 dark:text-amber-300">
+                      Your cart already contains <span className="font-semibold">{cartVersion === "strategy" ? "Strategies" : "Indicators"}</span>. Indicators and Strategies can't be checked out together — clear your cart or check out first.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -276,7 +309,7 @@ export default function IndicatorDetail() {
                   <div className="flex flex-wrap items-center gap-3">
                     <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20" data-testid="badge-in-cart-version">
                       <CheckCircle2 className="mr-1 h-3 w-3" />
-                      Added: {cartItem?.version === "strategy" ? "Strategy Version" : "Indicator Version"}
+                      Added: {cartItem?.version === "strategy" ? "Strategy" : "Indicator"}
                       {cartItem?.isTrial ? " · Trial" : ""}
                     </Badge>
                     <Link href="/cart">
@@ -286,16 +319,16 @@ export default function IndicatorDetail() {
                     </Link>
                   </div>
                 ) : parseFloat(activePrice) === 0 ? (
-                  <Button size="lg" onClick={handleAddToCart} data-testid="button-add-to-cart">
+                  <Button size="lg" onClick={handleAddToCart} disabled={conflict} data-testid="button-add-to-cart">
                     Get Free Access
                   </Button>
                 ) : (
                   <>
-                    <Button size="lg" onClick={handleAddToCart} data-testid="button-add-to-cart">
+                    <Button size="lg" onClick={handleAddToCart} disabled={conflict} data-testid="button-add-to-cart">
                       <ShoppingCart className="mr-2 h-4 w-4" /> Add to Cart · {versionLabel}
                     </Button>
                     {!isFree && (
-                      <Button variant="outline" size="lg" onClick={handleGetTrial} data-testid="button-get-trial">
+                      <Button variant="outline" size="lg" onClick={handleGetTrial} disabled={conflict} data-testid="button-get-trial">
                         Get Trial
                       </Button>
                     )}
