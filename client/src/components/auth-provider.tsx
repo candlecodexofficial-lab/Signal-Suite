@@ -1,19 +1,16 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
-import type { User, InsertUser, SignupInput, LoginInput } from "@shared/schema";
-
-type AuthUser = User & { isAdmin?: boolean };
+import type { User, InsertUser } from "@shared/schema";
 
 interface AuthContextType {
-  user: AuthUser | null;
+  user: User | null;
   isLoading: boolean;
   isAuthModalOpen: boolean;
   openAuthModal: (options?: { onSuccess?: () => void }) => void;
   closeAuthModal: () => void;
   authModalOnSuccess: (() => void) | null;
-  signup: (data: SignupInput) => Promise<{ user: User; isNewUser: boolean }>;
-  login: (data: LoginInput) => Promise<{ user: User; isNewUser: boolean }>;
+  signupOrLogin: (data: InsertUser) => Promise<{ user: User; isNewUser: boolean }>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<InsertUser>) => Promise<User>;
 }
@@ -24,7 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalOnSuccess, setAuthModalOnSuccess] = useState<(() => void) | null>(null);
 
-  const { data: user, isLoading } = useQuery<AuthUser | null>({
+  const { data: user, isLoading } = useQuery<User | null>({
     queryKey: ["/api/auth/me"],
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
@@ -39,15 +36,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthModalOnSuccess(null);
   }, []);
 
-  const signup = useCallback(async (data: SignupInput) => {
-    const res = await apiRequest("POST", "/api/auth/signup", data);
-    const result = await res.json();
-    queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-    return result;
-  }, []);
-
-  const login = useCallback(async (data: LoginInput) => {
-    const res = await apiRequest("POST", "/api/auth/login", data);
+  const signupOrLogin = useCallback(async (data: InsertUser) => {
+    const res = await apiRequest("POST", "/api/auth/signup-or-login", data);
     const result = await res.json();
     queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
     return result;
@@ -74,8 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         openAuthModal,
         closeAuthModal,
         authModalOnSuccess,
-        signup,
-        login,
+        signupOrLogin,
         logout,
         updateProfile,
       }}

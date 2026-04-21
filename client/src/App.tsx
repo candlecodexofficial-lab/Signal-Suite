@@ -14,8 +14,6 @@ import IndicatorDetail from "@/pages/indicator-detail";
 import CartPage from "@/pages/cart";
 import Checkout from "@/pages/checkout";
 import Dashboard from "@/pages/dashboard";
-import AdminOrders from "@/pages/admin-orders";
-import Forbidden from "@/pages/forbidden";
 
 function Router() {
   return (
@@ -26,8 +24,6 @@ function Router() {
       <Route path="/cart" component={CartPage} />
       <Route path="/checkout" component={Checkout} />
       <Route path="/dashboard" component={Dashboard} />
-      <Route path="/admin/orders" component={AdminOrders} />
-      <Route path="/forbidden" component={Forbidden} />
       <Route component={NotFound} />
     </Switch>
   );

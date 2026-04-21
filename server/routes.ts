@@ -1,48 +1,8 @@
-import type { Express, Request, Response, NextFunction } from "express";
+import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, signupSchema, loginSchema } from "@shared/schema";
+import { insertUserSchema } from "@shared/schema";
 import { seedDatabase } from "./seed";
-import { hashPassword, verifyPassword } from "./auth";
-import type { User } from "@shared/schema";
-import { sendOrderApprovedEmail, sendOrderRejectedEmail } from "./email";
-import rateLimit from "express-rate-limit";
-
-function sanitizeUser(user: User) {
-  const { passwordHash: _ph, ...safe } = user;
-  return safe;
-}
-
-const authEnumerationLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 20,
-  standardHeaders: "draft-7",
-  legacyHeaders: false,
-  message: { message: "Too many requests. Please try again later." },
-});
-
-function getAdminEmails(): string[] {
-  const raw = process.env.ADMIN_EMAILS || "";
-  return raw.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
-}
-
-async function isAdminUser(userId: number | undefined): Promise<boolean> {
-  if (!userId) return false;
-  const user = await storage.getUserById(userId);
-  if (!user) return false;
-  return getAdminEmails().includes(user.email.toLowerCase());
-}
-
-async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  if (!req.session.userId) {
-    return res.status(401).json({ message: "Not authenticated" });
-  }
-  const ok = await isAdminUser(req.session.userId);
-  if (!ok) {
-    return res.status(403).json({ message: "Forbidden" });
-  }
-  next();
-}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -95,69 +55,37 @@ export async function registerRoutes(
       req.session.destroy(() => {});
       return res.status(401).json({ message: "User not found" });
     }
-    const adminEmails = getAdminEmails();
-    const isAdmin = adminEmails.includes(user.email.toLowerCase());
-    res.json({ ...sanitizeUser(user), isAdmin });
+    res.json(user);
   });
 
-  app.get("/api/auth/check-email", authEnumerationLimiter, async (req, res) => {
+  app.get("/api/auth/check-email", async (req, res) => {
     const email = req.query.email as string;
     if (!email) {
       return res.status(400).json({ message: "Email is required" });
     }
     const user = await storage.getUserByEmail(email);
     if (user) {
-      res.json({
-        exists: true,
-        hasPassword: !!user.passwordHash,
-        user: {
-          firstName: user.firstName,
-          lastName: user.lastName,
-          username: user.username,
-          mobileNumber: user.mobileNumber,
-          tradingViewUsername: user.tradingViewUsername,
-        },
-      });
+      res.json({ exists: true, user: { firstName: user.firstName, lastName: user.lastName, username: user.username, mobileNumber: user.mobileNumber, tradingViewUsername: user.tradingViewUsername } });
     } else {
-      res.json({ exists: false, hasPassword: false });
+      res.json({ exists: false });
     }
   });
 
-  app.post("/api/auth/signup", authEnumerationLimiter, async (req, res) => {
-    const parsed = signupSchema.safeParse(req.body);
+  app.post("/api/auth/signup-or-login", async (req, res) => {
+    const parsed = insertUserSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });
     }
 
     const existing = await storage.getUserByEmail(parsed.data.email);
     if (existing) {
-      return res.status(409).json({ message: "An account with this email already exists. Please log in instead." });
+      req.session.userId = existing.id;
+      return res.json({ user: existing, isNewUser: false });
     }
 
-    const { password, ...profile } = parsed.data;
-    const passwordHash = hashPassword(password);
-    const user = await storage.createUser({ ...profile, passwordHash });
+    const user = await storage.createUser(parsed.data);
     req.session.userId = user.id;
-    res.status(201).json({ user: sanitizeUser(user), isNewUser: true });
-  });
-
-  app.post("/api/auth/login", authEnumerationLimiter, async (req, res) => {
-    const parsed = loginSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });
-    }
-
-    const user = await storage.getUserByEmail(parsed.data.email);
-    if (!user || !verifyPassword(parsed.data.password, user.passwordHash)) {
-      return res.status(401).json({ message: "Invalid email or password" });
-    }
-
-    req.session.userId = user.id;
-    res.json({ user: sanitizeUser(user), isNewUser: false });
-  });
-
-  app.post("/api/auth/signup-or-login", async (_req, res) => {
-    res.status(410).json({ message: "This endpoint is no longer supported. Use /api/auth/signup or /api/auth/login." });
+    res.status(201).json({ user, isNewUser: true });
   });
 
   app.post("/api/auth/update", async (req, res) => {
@@ -168,9 +96,8 @@ export async function registerRoutes(
     if (!parsed.success) {
       return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });
     }
-    const { email: _ignoredEmail, ...safeData } = parsed.data;
-    const user = await storage.updateUser(req.session.userId, safeData);
-    res.json(sanitizeUser(user));
+    const user = await storage.updateUser(req.session.userId, parsed.data);
+    res.json(user);
   });
 
   app.post("/api/auth/logout", async (req, res) => {
@@ -290,136 +217,6 @@ export async function registerRoutes(
     }
 
     res.status(201).json(order);
-  });
-
-  app.get("/api/admin/orders", requireAdmin, async (req, res) => {
-    const statusFilter = (req.query.status as string) || "all";
-    const q = ((req.query.q as string) || "").trim().toLowerCase();
-
-    const allOrders = await storage.getAllOrders();
-    const allIndicators = await storage.getIndicators();
-    const indicatorMap = new Map(allIndicators.map((i) => [i.id, i]));
-
-    const enriched = await Promise.all(
-      allOrders.map(async (order) => {
-        const buyer = await storage.getUserById(order.userId);
-        const items = await storage.getOrderItems(order.id);
-        const enrichedItems = items.map((item) => {
-          const indicator = indicatorMap.get(item.indicatorId);
-          return {
-            ...item,
-            indicatorName: indicator?.name || "Unknown",
-            indicatorSlug: indicator?.slug || "",
-            indicatorCategory: indicator?.category || "",
-          };
-        });
-        return {
-          ...order,
-          buyer: buyer
-            ? {
-                id: buyer.id,
-                firstName: buyer.firstName,
-                lastName: buyer.lastName,
-                email: buyer.email,
-                mobileNumber: buyer.mobileNumber,
-                tradingViewUsername: buyer.tradingViewUsername,
-              }
-            : null,
-          items: enrichedItems,
-          itemCount: enrichedItems.length,
-        };
-      })
-    );
-
-    let filtered = enriched;
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((o) => o.status === statusFilter);
-    }
-    if (q) {
-      filtered = filtered.filter((o) => {
-        const buyerEmail = o.buyer?.email?.toLowerCase() || "";
-        const tvUser = o.buyer?.tradingViewUsername?.toLowerCase() || "";
-        const name = `${o.buyer?.firstName || ""} ${o.buyer?.lastName || ""}`.toLowerCase();
-        return buyerEmail.includes(q) || tvUser.includes(q) || name.includes(q);
-      });
-    }
-
-    res.json(filtered);
-  });
-
-  app.get("/api/admin/orders/:id", requireAdmin, async (req, res) => {
-    const id = parseInt(String(req.params.id));
-    if (isNaN(id)) return res.status(400).json({ message: "Invalid order id" });
-    const order = await storage.getOrderById(id);
-    if (!order) return res.status(404).json({ message: "Order not found" });
-    const buyer = await storage.getUserById(order.userId);
-    const items = await storage.getOrderItems(order.id);
-    const allIndicators = await storage.getIndicators();
-    const indicatorMap = new Map(allIndicators.map((i) => [i.id, i]));
-    const enrichedItems = items.map((item) => {
-      const indicator = indicatorMap.get(item.indicatorId);
-      return {
-        ...item,
-        indicatorName: indicator?.name || "Unknown",
-        indicatorSlug: indicator?.slug || "",
-        indicatorCategory: indicator?.category || "",
-      };
-    });
-    res.json({
-      ...order,
-      buyer: buyer
-        ? {
-            id: buyer.id,
-            firstName: buyer.firstName,
-            lastName: buyer.lastName,
-            email: buyer.email,
-            mobileNumber: buyer.mobileNumber,
-            tradingViewUsername: buyer.tradingViewUsername,
-          }
-        : null,
-      items: enrichedItems,
-    });
-  });
-
-  app.post("/api/admin/orders/:id/status", requireAdmin, async (req, res) => {
-    const id = parseInt(String(req.params.id));
-    if (isNaN(id)) return res.status(400).json({ message: "Invalid order id" });
-    const { status } = req.body || {};
-    if (!["approved", "rejected", "pending"].includes(status)) {
-      return res.status(400).json({ message: "Invalid status" });
-    }
-    const existing = await storage.getOrderById(id);
-    if (!existing) return res.status(404).json({ message: "Order not found" });
-    const approvedAt = status === "approved" ? new Date() : null;
-    const updated = await storage.updateOrderStatus(id, status, approvedAt);
-
-    if (
-      (status === "approved" || status === "rejected") &&
-      existing.status !== status
-    ) {
-      try {
-        const buyer = await storage.getUserById(updated.userId);
-        if (buyer?.email) {
-          const items = await storage.getOrderItems(updated.id);
-          const enrichedItems = await Promise.all(
-            items.map(async (item) => {
-              const indicator = await storage.getIndicatorById(item.indicatorId);
-              return { ...item, indicator };
-            })
-          );
-          const payload = { buyer, order: updated, items: enrichedItems };
-          const sender =
-            status === "approved" ? sendOrderApprovedEmail : sendOrderRejectedEmail;
-          sender(payload).catch((err) =>
-            console.error("[email] Unhandled status email error:", err)
-          );
-        }
-      } catch (err) {
-        console.error("[email] Failed to dispatch status email:", err);
-      }
-    }
-
-    res.json(updated);
   });
 
   return httpServer;

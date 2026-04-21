@@ -15,16 +15,12 @@ export interface IStorage {
   createIndicator(indicator: InsertIndicator): Promise<Indicator>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserById(id: number): Promise<User | undefined>;
-  createUser(user: InsertUser & { passwordHash: string }): Promise<User>;
+  createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, data: Partial<InsertUser>): Promise<User>;
-  updateUserPassword(id: number, passwordHash: string): Promise<User>;
   createOrder(order: InsertOrder): Promise<Order>;
   createOrderItem(item: InsertOrderItem): Promise<OrderItem>;
   getUserOrders(userId: number): Promise<Order[]>;
   getOrderItems(orderId: number): Promise<OrderItem[]>;
-  getAllOrders(): Promise<Order[]>;
-  getOrderById(id: number): Promise<Order | undefined>;
-  updateOrderStatus(id: number, status: string, approvedAt: Date | null): Promise<Order>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -57,18 +53,13 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async createUser(user: InsertUser & { passwordHash: string }): Promise<User> {
+  async createUser(user: InsertUser): Promise<User> {
     const [result] = await db.insert(users).values(user).returning();
     return result;
   }
 
   async updateUser(id: number, data: Partial<InsertUser>): Promise<User> {
     const [result] = await db.update(users).set(data).where(eq(users.id, id)).returning();
-    return result;
-  }
-
-  async updateUserPassword(id: number, passwordHash: string): Promise<User> {
-    const [result] = await db.update(users).set({ passwordHash }).where(eq(users.id, id)).returning();
     return result;
   }
 
@@ -88,24 +79,6 @@ export class DatabaseStorage implements IStorage {
 
   async getOrderItems(orderId: number): Promise<OrderItem[]> {
     return db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
-  }
-
-  async getAllOrders(): Promise<Order[]> {
-    return db.select().from(orders).orderBy(desc(orders.createdAt));
-  }
-
-  async getOrderById(id: number): Promise<Order | undefined> {
-    const [result] = await db.select().from(orders).where(eq(orders.id, id));
-    return result;
-  }
-
-  async updateOrderStatus(id: number, status: string, approvedAt: Date | null): Promise<Order> {
-    const [result] = await db
-      .update(orders)
-      .set({ status, approvedAt })
-      .where(eq(orders.id, id))
-      .returning();
-    return result;
   }
 }
 

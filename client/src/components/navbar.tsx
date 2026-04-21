@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { ShoppingCart, TrendingUp, Menu, X, LogOut, LayoutDashboard, ShieldCheck } from "lucide-react";
+import { ShoppingCart, TrendingUp, Menu, X, LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -68,18 +68,6 @@ export function Navbar() {
                 </Button>
               </Link>
             ))}
-            {user?.isAdmin && (
-              <Link href="/admin/orders">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={location.startsWith("/admin") ? "text-foreground" : "text-muted-foreground"}
-                  data-testid="link-nav-admin"
-                >
-                  <ShieldCheck className="mr-1.5 h-4 w-4" /> Admin
-                </Button>
-              </Link>
-            )}
           </div>
 
           <div className="flex items-center gap-1">
@@ -203,18 +191,6 @@ export function Navbar() {
                     <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
                   </Button>
                 </Link>
-                {user.isAdmin && (
-                  <Link href="/admin/orders" onClick={() => setMobileOpen(false)}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full justify-start"
-                      data-testid="link-mobile-admin"
-                    >
-                      <ShieldCheck className="mr-2 h-4 w-4" /> Admin
-                    </Button>
-                  </Link>
-                )}
                 <Button
                   variant="ghost"
                   size="sm"
