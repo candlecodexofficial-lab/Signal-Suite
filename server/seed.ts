@@ -1,5 +1,7 @@
 import { db } from "./db";
-import { indicators } from "@shared/schema";
+import { indicators, users } from "@shared/schema";
+import { eq } from "drizzle-orm";
+import { hashPassword } from "./auth";
 
 const seedIndicators = [
   {
@@ -254,10 +256,40 @@ const seedIndicators = [
 
 export async function seedDatabase() {
   const existing = await db.select().from(indicators);
-  if (existing.length > 0) return;
-
-  for (const ind of seedIndicators) {
-    await db.insert(indicators).values(ind);
+  if (existing.length === 0) {
+    for (const ind of seedIndicators) {
+      await db.insert(indicators).values(ind);
+    }
+    console.log("Database seeded with indicators");
   }
-  console.log("Database seeded with indicators");
+
+  await bootstrapAdmin();
+}
+
+async function bootstrapAdmin() {
+  const email = (process.env.ADMIN_BOOTSTRAP_EMAIL || "").trim().toLowerCase();
+  const password = process.env.ADMIN_BOOTSTRAP_PASSWORD || "";
+  if (!email || !password) return;
+  if (password.length < 8) {
+    console.warn("ADMIN_BOOTSTRAP_PASSWORD must be at least 8 characters; skipping admin bootstrap.");
+    return;
+  }
+
+  const passwordHash = hashPassword(password);
+  const [existing] = await db.select().from(users).where(eq(users.email, email));
+  if (!existing) {
+    await db.insert(users).values({
+      firstName: "Admin",
+      lastName: "User",
+      username: "admin",
+      email,
+      mobileNumber: "0000000000",
+      tradingViewUsername: "admin",
+      passwordHash,
+    });
+    console.log(`Bootstrapped admin user ${email}`);
+  } else if (!existing.passwordHash) {
+    await db.update(users).set({ passwordHash }).where(eq(users.id, existing.id));
+    console.log(`Set initial password for admin user ${email}`);
+  }
 }

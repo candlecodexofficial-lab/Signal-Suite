@@ -36,6 +36,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   mobileNumber: text("mobile_number").notNull(),
   tradingViewUsername: text("tradingview_username").notNull(),
+  passwordHash: text("password_hash"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -59,7 +60,7 @@ export const orderItems = pgTable("order_items", {
 });
 
 export const insertIndicatorSchema = createInsertSchema(indicators).omit({ id: true });
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true }).extend({
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, passwordHash: true }).extend({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -67,6 +68,23 @@ export const insertUserSchema = createInsertSchema(users).omit({ id: true, creat
   mobileNumber: z.string().min(10, "Please enter a valid mobile number").regex(/^[+]?[\d\s()-]+$/, "Invalid mobile number format"),
   tradingViewUsername: z.string().min(2, "TradingView username is required"),
 });
+
+export const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(200, "Password is too long");
+
+export const signupSchema = insertUserSchema.extend({
+  password: passwordSchema,
+});
+
+export const loginSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+export type SignupInput = z.infer<typeof signupSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });
 export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true });
 

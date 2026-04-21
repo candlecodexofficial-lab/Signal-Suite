@@ -15,8 +15,9 @@ export interface IStorage {
   createIndicator(indicator: InsertIndicator): Promise<Indicator>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserById(id: number): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  createUser(user: InsertUser & { passwordHash: string }): Promise<User>;
   updateUser(id: number, data: Partial<InsertUser>): Promise<User>;
+  updateUserPassword(id: number, passwordHash: string): Promise<User>;
   createOrder(order: InsertOrder): Promise<Order>;
   createOrderItem(item: InsertOrderItem): Promise<OrderItem>;
   getUserOrders(userId: number): Promise<Order[]>;
@@ -56,13 +57,18 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async createUser(user: InsertUser): Promise<User> {
+  async createUser(user: InsertUser & { passwordHash: string }): Promise<User> {
     const [result] = await db.insert(users).values(user).returning();
     return result;
   }
 
   async updateUser(id: number, data: Partial<InsertUser>): Promise<User> {
     const [result] = await db.update(users).set(data).where(eq(users.id, id)).returning();
+    return result;
+  }
+
+  async updateUserPassword(id: number, passwordHash: string): Promise<User> {
+    const [result] = await db.update(users).set({ passwordHash }).where(eq(users.id, id)).returning();
     return result;
   }
 

@@ -1,9 +1,15 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema } from "@shared/schema";
-import { z } from "zod";
+import { insertUserSchema, signupSchema, loginSchema } from "@shared/schema";
 import { seedDatabase } from "./seed";
+import { hashPassword, verifyPassword } from "./auth";
+import type { User } from "@shared/schema";
+
+function sanitizeUser(user: User) {
+  const { passwordHash: _ph, ...safe } = user;
+  return safe;
+}
 
 function getAdminEmails(): string[] {
   const raw = process.env.ADMIN_EMAILS || "";
@@ -81,7 +87,7 @@ export async function registerRoutes(
     }
     const adminEmails = getAdminEmails();
     const isAdmin = adminEmails.includes(user.email.toLowerCase());
-    res.json({ ...user, isAdmin });
+    res.json({ ...sanitizeUser(user), isAdmin });
   });
 
   app.get("/api/auth/check-email", async (req, res) => {
@@ -90,33 +96,58 @@ export async function registerRoutes(
       return res.status(400).json({ message: "Email is required" });
     }
     const user = await storage.getUserByEmail(email);
-    res.json({ exists: !!user });
+    if (user) {
+      res.json({
+        exists: true,
+        hasPassword: !!user.passwordHash,
+        user: {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          username: user.username,
+          mobileNumber: user.mobileNumber,
+          tradingViewUsername: user.tradingViewUsername,
+        },
+      });
+    } else {
+      res.json({ exists: false, hasPassword: false });
+    }
   });
 
-  app.post("/api/auth/signup-or-login", async (req, res) => {
-    const emailOnly = z.object({ email: z.string().email() }).safeParse(req.body);
-    if (emailOnly.success) {
-      const existing = await storage.getUserByEmail(emailOnly.data.email);
-      if (existing) {
-        req.session.userId = existing.id;
-        return res.json({ user: existing, isNewUser: false });
-      }
-    }
-
-    const parsed = insertUserSchema.safeParse(req.body);
+  app.post("/api/auth/signup", async (req, res) => {
+    const parsed = signupSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });
     }
 
     const existing = await storage.getUserByEmail(parsed.data.email);
     if (existing) {
-      req.session.userId = existing.id;
-      return res.json({ user: existing, isNewUser: false });
+      return res.status(409).json({ message: "An account with this email already exists. Please log in instead." });
     }
 
-    const user = await storage.createUser(parsed.data);
+    const { password, ...profile } = parsed.data;
+    const passwordHash = hashPassword(password);
+    const user = await storage.createUser({ ...profile, passwordHash });
     req.session.userId = user.id;
-    res.status(201).json({ user, isNewUser: true });
+    res.status(201).json({ user: sanitizeUser(user), isNewUser: true });
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });
+    }
+
+    const user = await storage.getUserByEmail(parsed.data.email);
+    if (!user || !verifyPassword(parsed.data.password, user.passwordHash)) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    req.session.userId = user.id;
+    res.json({ user: sanitizeUser(user), isNewUser: false });
+  });
+
+  app.post("/api/auth/signup-or-login", async (_req, res) => {
+    res.status(410).json({ message: "This endpoint is no longer supported. Use /api/auth/signup or /api/auth/login." });
   });
 
   app.post("/api/auth/update", async (req, res) => {
@@ -129,7 +160,7 @@ export async function registerRoutes(
     }
     const { email: _ignoredEmail, ...safeData } = parsed.data;
     const user = await storage.updateUser(req.session.userId, safeData);
-    res.json(user);
+    res.json(sanitizeUser(user));
   });
 
   app.post("/api/auth/logout", async (req, res) => {

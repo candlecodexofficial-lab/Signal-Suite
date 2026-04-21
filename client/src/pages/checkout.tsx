@@ -20,7 +20,7 @@ import { useState, useEffect } from "react";
 
 export default function Checkout() {
   const { items, totalPrice, clearCart } = useCart();
-  const { user, signupOrLogin, openAuthModal } = useAuth();
+  const { user, openAuthModal } = useAuth();
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const [orderComplete, setOrderComplete] = useState(false);
@@ -55,7 +55,7 @@ export default function Checkout() {
   const submitMutation = useMutation({
     mutationFn: async (data: InsertUser) => {
       if (!user) {
-        await signupOrLogin(data);
+        throw new Error("Please sign in before placing your order.");
       } else if (isEditing) {
         await apiRequest("POST", "/api/auth/update", data);
         queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
@@ -82,6 +82,12 @@ export default function Checkout() {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
+
+  useEffect(() => {
+    if (!user && !orderComplete && items.length > 0) {
+      openAuthModal();
+    }
+  }, [user, orderComplete, openAuthModal, items.length]);
 
   if (items.length === 0 && !orderComplete) {
     navigate("/cart");

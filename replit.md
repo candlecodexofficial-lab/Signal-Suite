@@ -35,8 +35,9 @@ A premium web application for browsing and subscribing to TradingView indicators
 - `GET /api/indicators` - List all indicators
 - `GET /api/indicators/:slug` - Get indicator by slug
 - `GET /api/auth/me` - Get current authenticated user (401 if not)
-- `GET /api/auth/check-email?email=` - Check if an account exists for the email; returns only `{ exists: boolean }`
-- `POST /api/auth/signup-or-login` - Create or log in user by email detection
+- `GET /api/auth/check-email?email=` - Check if email exists, returns user data and `hasPassword` flag
+- `POST /api/auth/signup` - Create account with required password (8+ chars)
+- `POST /api/auth/login` - Authenticate with email + password
 - `POST /api/auth/update` - Update authenticated user profile
 - `POST /api/auth/logout` - Destroy session
 - `GET /api/dashboard` - Get user's orders with enriched items (access status, days remaining)
@@ -44,7 +45,7 @@ A premium web application for browsing and subscribing to TradingView indicators
 
 ## Database Tables
 - `indicators` - Product catalog (name, slug, category, tier, price, features, stats, markets, bestTimeframes, signalLogic, entryConditions, exitConditions, stopLossStrategy, targetStrategy, recommendedSettings)
-- `users` - User accounts (name, email unique, username, mobile, TradingView username)
+- `users` - User accounts (name, email unique, username, mobile, TradingView username, scrypt passwordHash)
 - `orders` - Order records (userId, status, totalAmount, approvedAt)
 - `order_items` - Individual items in orders (indicatorId, duration, price, isTrial)
 - `session` - Express session store (auto-created by connect-pg-simple)
