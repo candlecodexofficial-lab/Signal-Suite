@@ -130,13 +130,49 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
             </div>
           </div>
 
-          <div>
-            <h3 className="text-lg font-semibold tracking-tight" data-testid={`text-indicator-name-${indicator.id}`}>
-              {indicator.name}
-            </h3>
-            <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-              {indicator.shortDescription}
-            </p>
+          <div className="relative overflow-hidden rounded-md">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 320 120"
+              preserveAspectRatio="none"
+              className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.18] dark:opacity-25"
+            >
+              <defs>
+                <linearGradient id={`chart-fill-${indicator.id}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.45" />
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
+                </linearGradient>
+                <pattern id={`chart-grid-${indicator.id}`} width="32" height="24" patternUnits="userSpaceOnUse">
+                  <path d="M32 0 L0 0 0 24" fill="none" stroke="currentColor" strokeWidth="0.4" opacity="0.35" />
+                </pattern>
+              </defs>
+              <rect width="320" height="120" fill={`url(#chart-grid-${indicator.id})`} className="text-muted-foreground" />
+              <path
+                d="M0,90 L24,82 L48,88 L72,70 L96,75 L120,55 L144,62 L168,42 L192,48 L216,30 L240,38 L264,22 L288,28 L312,15 L320,18 L320,120 L0,120 Z"
+                fill={`url(#chart-fill-${indicator.id})`}
+              />
+              <path
+                d="M0,90 L24,82 L48,88 L72,70 L96,75 L120,55 L144,62 L168,42 L192,48 L216,30 L240,38 L264,22 L288,28 L312,15 L320,18"
+                fill="none"
+                stroke="hsl(var(--primary))"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <g className="text-emerald-500">
+                <circle cx="120" cy="55" r="2" fill="currentColor" />
+                <circle cx="216" cy="30" r="2" fill="currentColor" />
+                <circle cx="288" cy="28" r="2" fill="currentColor" />
+              </g>
+            </svg>
+            <div className="relative z-[1] py-2">
+              <h3 className="text-lg font-semibold tracking-tight" data-testid={`text-indicator-name-${indicator.id}`}>
+                {indicator.name}
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+                {indicator.shortDescription}
+              </p>
+            </div>
           </div>
 
           <Separator />
