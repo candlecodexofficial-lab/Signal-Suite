@@ -18,6 +18,13 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Search,
   CheckCircle2,
   XCircle,
@@ -116,6 +123,7 @@ export default function AdminOrders() {
   const [, navigate] = useLocation();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<string>("date-desc");
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
   const queryKey = useMemo(
@@ -144,7 +152,26 @@ export default function AdminOrders() {
     return <Forbidden />;
   }
 
-  const selectedOrder = orders?.find((o) => o.id === selectedOrderId) || null;
+  const sortedOrders = useMemo(() => {
+    if (!orders) return [];
+    const arr = [...orders];
+    arr.sort((a, b) => {
+      switch (sortBy) {
+        case "date-asc":
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case "amount-desc":
+          return parseFloat(b.totalAmount) - parseFloat(a.totalAmount);
+        case "amount-asc":
+          return parseFloat(a.totalAmount) - parseFloat(b.totalAmount);
+        case "date-desc":
+        default:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+    });
+    return arr;
+  }, [orders, sortBy]);
+
+  const selectedOrder = sortedOrders.find((o) => o.id === selectedOrderId) || null;
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
@@ -224,6 +251,19 @@ export default function AdminOrders() {
             className="pl-9"
             data-testid="input-search"
           />
+        </div>
+        <div className="w-full sm:w-56">
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger data-testid="select-sort">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="date-desc">Newest first</SelectItem>
+              <SelectItem value="date-asc">Oldest first</SelectItem>
+              <SelectItem value="amount-desc">Amount (high to low)</SelectItem>
+              <SelectItem value="amount-asc">Amount (low to high)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -343,25 +383,40 @@ export default function AdminOrders() {
                     Items
                   </h3>
                   <div className="space-y-2">
-                    {selectedOrder.items.map((item) => (
-                      <Card key={item.id} className="border-card-border p-3" data-testid={`detail-item-${item.id}`}>
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="font-medium text-sm">{item.indicatorName}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {item.indicatorCategory} · {item.version === "strategy" ? "Strategy" : "Indicator"}
-                              {" · "}
-                              {item.isTrial
-                                ? "15-Day Trial"
-                                : `${item.duration} month${item.duration !== 1 ? "s" : ""}`}
-                            </p>
+                    {selectedOrder.items.map((item) => {
+                      const lineTotal = parseFloat(item.price);
+                      const unitPrice = item.isTrial
+                        ? lineTotal
+                        : item.duration > 0
+                        ? lineTotal / item.duration
+                        : lineTotal;
+                      return (
+                        <Card key={item.id} className="border-card-border p-3" data-testid={`detail-item-${item.id}`}>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="font-medium text-sm">{item.indicatorName}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {item.indicatorCategory} · {item.version === "strategy" ? "Strategy" : "Indicator"}
+                                {" · "}
+                                {item.isTrial
+                                  ? "15-Day Trial"
+                                  : `${item.duration} month${item.duration !== 1 ? "s" : ""}`}
+                              </p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-sm font-semibold" data-testid={`detail-line-total-${item.id}`}>
+                                {formatINR(lineTotal)}
+                              </p>
+                              <p className="text-[11px] text-muted-foreground" data-testid={`detail-unit-price-${item.id}`}>
+                                {item.isTrial
+                                  ? "Trial price"
+                                  : `${formatINR(unitPrice)} × ${item.duration}`}
+                              </p>
+                            </div>
                           </div>
-                          <span className="text-sm font-semibold shrink-0">
-                            {formatINR(item.price)}
-                          </span>
-                        </div>
-                      </Card>
-                    ))}
+                        </Card>
+                      );
+                    })}
                   </div>
                   <Separator className="my-3" />
                   <div className="flex items-center justify-between text-sm">
