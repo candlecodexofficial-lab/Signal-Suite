@@ -40,6 +40,7 @@ interface DashboardOrder {
   userId: number;
   status: string;
   totalAmount: string;
+  rejectionReason: string | null;
   createdAt: string;
   approvedAt: string | null;
   items: DashboardOrderItem[];
@@ -283,6 +284,18 @@ export default function Dashboard() {
                         </span>
                       </div>
                     </div>
+
+                    {order.status === "rejected" && order.rejectionReason && (
+                      <div className="border-b bg-red-500/5 px-5 py-3" data-testid={`rejection-reason-${order.id}`}>
+                        <div className="flex items-start gap-2">
+                          <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-red-600 dark:text-red-400">Reason for rejection</p>
+                            <p className="mt-0.5 text-sm text-foreground">{order.rejectionReason}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="divide-y">
                       {order.items.map((item) => {

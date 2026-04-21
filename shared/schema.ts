@@ -36,6 +36,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   mobileNumber: text("mobile_number").notNull(),
   tradingViewUsername: text("tradingview_username").notNull(),
+  isAdmin: boolean("is_admin").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -44,6 +45,7 @@ export const orders = pgTable("orders", {
   userId: integer("user_id").notNull(),
   status: text("status").notNull().default("pending"),
   totalAmount: text("total_amount").notNull(),
+  rejectionReason: text("rejection_reason"),
   createdAt: timestamp("created_at").defaultNow(),
   approvedAt: timestamp("approved_at"),
 });
@@ -59,7 +61,7 @@ export const orderItems = pgTable("order_items", {
 });
 
 export const insertIndicatorSchema = createInsertSchema(indicators).omit({ id: true });
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true }).extend({
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, isAdmin: true }).extend({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -67,6 +69,13 @@ export const insertUserSchema = createInsertSchema(users).omit({ id: true, creat
   mobileNumber: z.string().min(10, "Please enter a valid mobile number").regex(/^[+]?[\d\s()-]+$/, "Invalid mobile number format"),
   tradingViewUsername: z.string().min(2, "TradingView username is required"),
 });
+
+export const updateUserProfileSchema = z.object({
+  firstName: z.string().min(2).optional(),
+  lastName: z.string().min(2).optional(),
+  mobileNumber: z.string().min(10).regex(/^[+]?[\d\s()-]+$/).optional(),
+  tradingViewUsername: z.string().min(2).optional(),
+}).strict();
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });
 export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true });
 

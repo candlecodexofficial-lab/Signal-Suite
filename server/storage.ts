@@ -17,10 +17,15 @@ export interface IStorage {
   getUserById(id: number): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, data: Partial<InsertUser>): Promise<User>;
+  setUserAdmin(id: number, isAdmin: boolean): Promise<User>;
+  getAllUsers(): Promise<User[]>;
   createOrder(order: InsertOrder): Promise<Order>;
   createOrderItem(item: InsertOrderItem): Promise<OrderItem>;
   getUserOrders(userId: number): Promise<Order[]>;
   getOrderItems(orderId: number): Promise<OrderItem[]>;
+  getOrderById(id: number): Promise<Order | undefined>;
+  approveOrder(id: number): Promise<Order>;
+  rejectOrder(id: number, reason: string): Promise<Order>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -60,6 +65,30 @@ export class DatabaseStorage implements IStorage {
 
   async updateUser(id: number, data: Partial<InsertUser>): Promise<User> {
     const [result] = await db.update(users).set(data).where(eq(users.id, id)).returning();
+    return result;
+  }
+
+  async setUserAdmin(id: number, isAdmin: boolean): Promise<User> {
+    const [result] = await db.update(users).set({ isAdmin }).where(eq(users.id, id)).returning();
+    return result;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async getOrderById(id: number): Promise<Order | undefined> {
+    const [result] = await db.select().from(orders).where(eq(orders.id, id));
+    return result;
+  }
+
+  async approveOrder(id: number): Promise<Order> {
+    const [result] = await db.update(orders).set({ status: "approved", approvedAt: new Date(), rejectionReason: null }).where(eq(orders.id, id)).returning();
+    return result;
+  }
+
+  async rejectOrder(id: number, reason: string): Promise<Order> {
+    const [result] = await db.update(orders).set({ status: "rejected", rejectionReason: reason, approvedAt: null }).where(eq(orders.id, id)).returning();
     return result;
   }
 

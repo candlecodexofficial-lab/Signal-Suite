@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema } from "@shared/schema";
+import { insertUserSchema, updateUserProfileSchema } from "@shared/schema";
 import { seedDatabase } from "./seed";
 
 export async function registerRoutes(
@@ -77,22 +77,136 @@ export async function registerRoutes(
       return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });
     }
 
+    const adminEmail = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
     const existing = await storage.getUserByEmail(parsed.data.email);
     if (existing) {
+      if (adminEmail && existing.email.toLowerCase() === adminEmail && !existing.isAdmin) {
+        await storage.setUserAdmin(existing.id, true);
+        existing.isAdmin = true;
+      }
       req.session.userId = existing.id;
       return res.json({ user: existing, isNewUser: false });
     }
 
     const user = await storage.createUser(parsed.data);
+    if (adminEmail && user.email.toLowerCase() === adminEmail) {
+      await storage.setUserAdmin(user.id, true);
+      user.isAdmin = true;
+    }
     req.session.userId = user.id;
     res.status(201).json({ user, isNewUser: true });
+  });
+
+  const requireAdmin = async (req: any, res: any, next: any) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const user = await storage.getUserById(req.session.userId);
+    if (!user || !user.isAdmin) {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+    next();
+  };
+
+  app.get("/api/admin/users", requireAdmin, async (_req, res) => {
+    const allUsers = await storage.getAllUsers();
+    const allIndicators = await storage.getIndicators();
+    const indicatorMap = new Map(allIndicators.map((i) => [i.id, i]));
+
+    const enriched = await Promise.all(
+      allUsers.map(async (u) => {
+        const userOrders = await storage.getUserOrders(u.id);
+        const ordersWithItems = await Promise.all(
+          userOrders.map(async (order) => {
+            const items = await storage.getOrderItems(order.id);
+            const enrichedItems = items.map((item) => {
+              const ind = indicatorMap.get(item.indicatorId);
+              let daysRemaining: number | null = null;
+              let accessStatus: "pending" | "active" | "expired" | "rejected" = "pending";
+              if (order.status === "rejected") {
+                accessStatus = "rejected";
+              } else if (order.status === "approved" && order.approvedAt) {
+                const expiry = new Date(order.approvedAt);
+                expiry.setMonth(expiry.getMonth() + item.duration);
+                const ms = expiry.getTime() - Date.now();
+                daysRemaining = Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+                accessStatus = daysRemaining > 0 ? "active" : "expired";
+              }
+              return {
+                ...item,
+                indicatorName: ind?.name || "Unknown",
+                indicatorSlug: ind?.slug || "",
+                indicatorTier: ind?.tier || "premium",
+                daysRemaining,
+                accessStatus,
+              };
+            });
+            return { ...order, items: enrichedItems };
+          })
+        );
+
+        const hasActivePlan = ordersWithItems.some((o) =>
+          o.items.some((it) => it.accessStatus === "active")
+        );
+        const planType = ordersWithItems.some((o) =>
+          o.items.some((it) => it.accessStatus === "active" && it.indicatorTier === "premium" && !it.isTrial)
+        )
+          ? "paid"
+          : ordersWithItems.some((o) => o.items.some((it) => it.accessStatus === "active" && it.isTrial))
+          ? "trial"
+          : ordersWithItems.some((o) => o.items.some((it) => it.accessStatus === "active" && it.indicatorTier === "free"))
+          ? "free"
+          : "none";
+
+        const maxDays = ordersWithItems
+          .flatMap((o) => o.items.map((it) => it.daysRemaining))
+          .filter((d): d is number => typeof d === "number")
+          .reduce((a, b) => Math.max(a, b), 0);
+
+        return {
+          ...u,
+          orders: ordersWithItems,
+          hasActivePlan,
+          planType,
+          daysRemaining: hasActivePlan ? maxDays : null,
+          totalOrders: ordersWithItems.length,
+          totalSpent: ordersWithItems
+            .filter((o) => o.status === "approved")
+            .reduce((sum, o) => sum + parseFloat(o.totalAmount), 0),
+        };
+      })
+    );
+
+    res.json(enriched);
+  });
+
+  app.post("/api/admin/orders/:id/approve", requireAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid order id" });
+    const order = await storage.getOrderById(id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    const updated = await storage.approveOrder(id);
+    res.json(updated);
+  });
+
+  app.post("/api/admin/orders/:id/reject", requireAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid order id" });
+    const reason = (req.body?.reason || "").toString().trim();
+    if (!reason || reason.length < 3) {
+      return res.status(400).json({ message: "Rejection reason is required (min 3 characters)" });
+    }
+    const order = await storage.getOrderById(id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    const updated = await storage.rejectOrder(id, reason);
+    res.json(updated);
   });
 
   app.post("/api/auth/update", async (req, res) => {
     if (!req.session.userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
-    const parsed = insertUserSchema.partial().safeParse(req.body);
+    const parsed = updateUserProfileSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });
     }
