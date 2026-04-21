@@ -3,8 +3,10 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
 import type { User, InsertUser } from "@shared/schema";
 
+type AuthUser = User & { isAdmin?: boolean };
+
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   isLoading: boolean;
   isAuthModalOpen: boolean;
   openAuthModal: (options?: { onSuccess?: () => void }) => void;
@@ -21,7 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalOnSuccess, setAuthModalOnSuccess] = useState<(() => void) | null>(null);
 
-  const { data: user, isLoading } = useQuery<User | null>({
+  const { data: user, isLoading } = useQuery<AuthUser | null>({
     queryKey: ["/api/auth/me"],
     queryFn: getQueryFn({ on401: "returnNull" }),
   });

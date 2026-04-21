@@ -1,8 +1,31 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema } from "@shared/schema";
 import { seedDatabase } from "./seed";
+
+function getAdminEmails(): string[] {
+  const raw = process.env.ADMIN_EMAILS || "";
+  return raw.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+}
+
+async function isAdminUser(userId: number | undefined): Promise<boolean> {
+  if (!userId) return false;
+  const user = await storage.getUserById(userId);
+  if (!user) return false;
+  return getAdminEmails().includes(user.email.toLowerCase());
+}
+
+async function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.session.userId) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+  const ok = await isAdminUser(req.session.userId);
+  if (!ok) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+  next();
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -55,7 +78,9 @@ export async function registerRoutes(
       req.session.destroy(() => {});
       return res.status(401).json({ message: "User not found" });
     }
-    res.json(user);
+    const adminEmails = getAdminEmails();
+    const isAdmin = adminEmails.includes(user.email.toLowerCase());
+    res.json({ ...user, isAdmin });
   });
 
   app.get("/api/auth/check-email", async (req, res) => {
@@ -96,7 +121,8 @@ export async function registerRoutes(
     if (!parsed.success) {
       return res.status(400).json({ message: "Validation failed", errors: parsed.error.flatten() });
     }
-    const user = await storage.updateUser(req.session.userId, parsed.data);
+    const { email: _ignoredEmail, ...safeData } = parsed.data;
+    const user = await storage.updateUser(req.session.userId, safeData);
     res.json(user);
   });
 
@@ -217,6 +243,109 @@ export async function registerRoutes(
     }
 
     res.status(201).json(order);
+  });
+
+  app.get("/api/admin/orders", requireAdmin, async (req, res) => {
+    const statusFilter = (req.query.status as string) || "all";
+    const q = ((req.query.q as string) || "").trim().toLowerCase();
+
+    const allOrders = await storage.getAllOrders();
+    const allIndicators = await storage.getIndicators();
+    const indicatorMap = new Map(allIndicators.map((i) => [i.id, i]));
+
+    const enriched = await Promise.all(
+      allOrders.map(async (order) => {
+        const buyer = await storage.getUserById(order.userId);
+        const items = await storage.getOrderItems(order.id);
+        const enrichedItems = items.map((item) => {
+          const indicator = indicatorMap.get(item.indicatorId);
+          return {
+            ...item,
+            indicatorName: indicator?.name || "Unknown",
+            indicatorSlug: indicator?.slug || "",
+            indicatorCategory: indicator?.category || "",
+          };
+        });
+        return {
+          ...order,
+          buyer: buyer
+            ? {
+                id: buyer.id,
+                firstName: buyer.firstName,
+                lastName: buyer.lastName,
+                email: buyer.email,
+                mobileNumber: buyer.mobileNumber,
+                tradingViewUsername: buyer.tradingViewUsername,
+              }
+            : null,
+          items: enrichedItems,
+          itemCount: enrichedItems.length,
+        };
+      })
+    );
+
+    let filtered = enriched;
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((o) => o.status === statusFilter);
+    }
+    if (q) {
+      filtered = filtered.filter((o) => {
+        const buyerEmail = o.buyer?.email?.toLowerCase() || "";
+        const tvUser = o.buyer?.tradingViewUsername?.toLowerCase() || "";
+        const name = `${o.buyer?.firstName || ""} ${o.buyer?.lastName || ""}`.toLowerCase();
+        return buyerEmail.includes(q) || tvUser.includes(q) || name.includes(q);
+      });
+    }
+
+    res.json(filtered);
+  });
+
+  app.get("/api/admin/orders/:id", requireAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid order id" });
+    const order = await storage.getOrderById(id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    const buyer = await storage.getUserById(order.userId);
+    const items = await storage.getOrderItems(order.id);
+    const allIndicators = await storage.getIndicators();
+    const indicatorMap = new Map(allIndicators.map((i) => [i.id, i]));
+    const enrichedItems = items.map((item) => {
+      const indicator = indicatorMap.get(item.indicatorId);
+      return {
+        ...item,
+        indicatorName: indicator?.name || "Unknown",
+        indicatorSlug: indicator?.slug || "",
+        indicatorCategory: indicator?.category || "",
+      };
+    });
+    res.json({
+      ...order,
+      buyer: buyer
+        ? {
+            id: buyer.id,
+            firstName: buyer.firstName,
+            lastName: buyer.lastName,
+            email: buyer.email,
+            mobileNumber: buyer.mobileNumber,
+            tradingViewUsername: buyer.tradingViewUsername,
+          }
+        : null,
+      items: enrichedItems,
+    });
+  });
+
+  app.post("/api/admin/orders/:id/status", requireAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid order id" });
+    const { status } = req.body || {};
+    if (!["approved", "rejected", "pending"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+    const existing = await storage.getOrderById(id);
+    if (!existing) return res.status(404).json({ message: "Order not found" });
+    const approvedAt = status === "approved" ? new Date() : null;
+    const updated = await storage.updateOrderStatus(id, status, approvedAt);
+    res.json(updated);
   });
 
   return httpServer;
