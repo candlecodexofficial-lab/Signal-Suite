@@ -301,7 +301,7 @@ export async function registerRoutes(
   });
 
   app.get("/api/admin/orders/:id", requireAdmin, async (req, res) => {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     if (isNaN(id)) return res.status(400).json({ message: "Invalid order id" });
     const order = await storage.getOrderById(id);
     if (!order) return res.status(404).json({ message: "Order not found" });
@@ -335,7 +335,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/orders/:id/status", requireAdmin, async (req, res) => {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     if (isNaN(id)) return res.status(400).json({ message: "Invalid order id" });
     const { status } = req.body || {};
     if (!["approved", "rejected", "pending"].includes(status)) {
