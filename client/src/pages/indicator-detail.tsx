@@ -467,9 +467,7 @@ export default function IndicatorDetail() {
               <TabsList className="h-auto bg-transparent p-0 gap-1 justify-start overflow-x-auto whitespace-nowrap flex-nowrap sm:flex-wrap sm:overflow-visible">
                 {[
                   { v: "overview", label: "Overview", icon: BookOpen },
-                  { v: "how", label: "How It Works", icon: Brain },
-                  { v: "settings", label: "Settings", icon: SettingsIcon },
-                  { v: "performance", label: "Performance", icon: Award },
+                  { v: "how", label: "Quick Start", icon: Brain },
                   { v: "reviews", label: "Reviews", icon: MessageSquare },
                   { v: "faq", label: "FAQ", icon: HelpCircle },
                 ].map(({ v, label, icon: TIcon }) => (
@@ -696,52 +694,6 @@ export default function IndicatorDetail() {
                       </div>
                     )
                   )}
-                </TabsContent>
-
-                {/* SETTINGS */}
-                <TabsContent value="settings" className="m-0">
-                  <Card className="border-card-border p-6">
-                    <div className="mb-4 flex items-center gap-2">
-                      <SettingsIcon className="h-4 w-4 text-primary" />
-                      <h2 className="text-lg font-semibold">Recommended Settings</h2>
-                    </div>
-                    {indicator.recommendedSettings ? (
-                      hasAccess ? (
-                        <div className="space-y-3" data-testid="settings-blocks">
-                          {settingsBlocks.map((b, i) => (
-                            <div key={i} className="rounded-md border border-card-border bg-muted/30 p-4">
-                              <p className="text-sm font-semibold text-primary">{b.title}</p>
-                              {b.detail && <p className="mt-1 text-sm text-muted-foreground">{b.detail}</p>}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <LockedBlock message={lockMessage} />
-                      )
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No recommended settings provided.</p>
-                    )}
-                  </Card>
-                </TabsContent>
-
-                {/* PERFORMANCE */}
-                <TabsContent value="performance" className="m-0 space-y-6">
-                  <Card className="border-card-border p-6">
-                    <div className="mb-4 flex items-center gap-2">
-                      <Award className="h-4 w-4 text-primary" />
-                      <h2 className="text-lg font-semibold">Performance Snapshot</h2>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                      <StatCell icon={Target} label="Win Rate" value={indicator.winRate || "—"} accent="text-emerald-500" />
-                      <StatCell icon={TrendingUp} label="Avg Return" value={indicator.avgReturn || "—"} accent="text-emerald-500" />
-                      <StatCell icon={Activity} label="Total Signals" value={indicator.totalTrades || "—"} />
-                      <StatCell icon={Zap} label="Profit Factor" value={stats.profitFactor} accent="text-amber-500" />
-                      <StatCell icon={LineChart} label="Avg RR" value={stats.avgRR} />
-                    </div>
-                    <p className="mt-4 text-xs text-muted-foreground">
-                      Performance numbers are based on historical signals across {stats.bestMarket} and similar instruments. Past performance does not guarantee future returns.
-                    </p>
-                  </Card>
                 </TabsContent>
 
                 {/* REVIEWS */}
