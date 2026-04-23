@@ -1,6 +1,12 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 
-export type ProductVersion = "indicator" | "strategy";
+export type ProductVersion = "indicator" | "strategy" | "both";
+
+export const VERSION_LABELS: Record<ProductVersion, string> = {
+  indicator: "Indicator",
+  strategy: "Strategy",
+  both: "Indicator + Strategy",
+};
 
 export interface CartItem {
   indicatorId: number;
@@ -18,15 +24,29 @@ export function computeStrategyPrice(indicatorPrice: string): string {
   return Math.round(p * 1.35).toString();
 }
 
+export function computeBothPrice(indicatorPrice: string): string {
+  const ind = parseFloat(indicatorPrice) || 0;
+  const strat = parseFloat(computeStrategyPrice(indicatorPrice)) || 0;
+  return Math.round(ind + strat).toString();
+}
+
+export function computeVersionPrice(version: ProductVersion, indicatorPrice: string): string {
+  if (version === "strategy") return computeStrategyPrice(indicatorPrice);
+  if (version === "both") return computeBothPrice(indicatorPrice);
+  return indicatorPrice;
+}
+
 export function computeTrialPrice(version: ProductVersion): string {
-  return version === "strategy" ? Math.round(5250 * 1.35).toString() : "5250";
+  if (version === "both") return Math.round(5250 + 5250 * 1.35).toString();
+  if (version === "strategy") return Math.round(5250 * 1.35).toString();
+  return "5250";
 }
 
 export type AddResult = { ok: true } | { ok: false; reason: "exists" | "mixed"; cartVersion?: ProductVersion };
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (item: Omit<CartItem, "duration" | "isTrial" | "version"> & { version?: ProductVersion }) => AddResult;
+  addItem: (item: Omit<CartItem, "duration" | "isTrial" | "version"> & { version?: ProductVersion; duration?: number }) => AddResult;
   addTrial: (item: Omit<CartItem, "duration" | "isTrial" | "version"> & { version?: ProductVersion }) => AddResult;
   removeItem: (indicatorId: number) => void;
   updateDuration: (indicatorId: number, duration: number) => void;
@@ -65,13 +85,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   };
 
-  const addItem = useCallback((item: Omit<CartItem, "duration" | "isTrial" | "version"> & { version?: ProductVersion }): AddResult => {
+  const addItem = useCallback((item: Omit<CartItem, "duration" | "isTrial" | "version"> & { version?: ProductVersion; duration?: number }): AddResult => {
     const version: ProductVersion = item.version ?? "indicator";
+    const duration = item.duration && item.duration > 0 ? Math.min(12, Math.floor(item.duration)) : 1;
     const result = evaluateAdd(items, item.indicatorId, version);
     if (result.ok) {
       setItems((prev) => {
         if (evaluateAdd(prev, item.indicatorId, version).ok) {
-          return [...prev, { ...item, version, duration: 1, isTrial: false }];
+          return [...prev, { ...item, version, duration, isTrial: false }];
         }
         return prev;
       });

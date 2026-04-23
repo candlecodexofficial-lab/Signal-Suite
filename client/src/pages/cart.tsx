@@ -91,10 +91,10 @@ export default function CartPage() {
                           </Link>
                           <Badge
                             variant="outline"
-                            className={`text-xs ${item.version === "strategy" ? "border-primary/40 text-primary" : ""}`}
+                            className={`text-xs ${item.version !== "indicator" ? "border-primary/40 text-primary" : ""}`}
                             data-testid={`badge-version-${item.indicatorId}`}
                           >
-                            {item.version === "strategy" ? "Strategy" : "Indicator"}
+                            {item.version === "strategy" ? "Strategy" : item.version === "both" ? "Indicator + Strategy" : "Indicator"}
                           </Badge>
                           {item.isTrial ? (
                             <Badge variant="secondary" className="text-xs" data-testid={`badge-trial-${item.indicatorId}`}>
@@ -191,7 +191,8 @@ export default function CartPage() {
                     <div className="min-w-0 flex-1">
                       <p className="text-muted-foreground truncate">{item.name}</p>
                       <p className="text-[10px] text-muted-foreground/70">
-                        {item.version === "strategy" ? "Strategy" : "Indicator"}
+                        {item.version === "strategy" ? "Strategy" : item.version === "both" ? "Indicator + Strategy" : "Indicator"}
+                        {!item.isTrial && parseFloat(item.price) > 0 ? ` · ${item.duration}m` : ""}
                       </p>
                     </div>
                     <span className="shrink-0 font-medium">

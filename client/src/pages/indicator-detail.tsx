@@ -17,7 +17,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { useCart, computeStrategyPrice, type ProductVersion } from "@/components/cart-provider";
+import { useCart, computeStrategyPrice, computeBothPrice, computeVersionPrice, computeTrialPrice, VERSION_LABELS, type ProductVersion } from "@/components/cart-provider";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { ChartPreview } from "@/components/chart-preview";
@@ -138,6 +142,10 @@ export default function IndicatorDetail() {
   const [selectedVersion, setSelectedVersion] = useState<ProductVersion>("indicator");
   const [activeTab, setActiveTab] = useState("overview");
   const [watchlist, setWatchlist] = useState<number[]>(() => readWatchlist());
+  const [pricingOpen, setPricingOpen] = useState(false);
+  const [dialogVersion, setDialogVersion] = useState<ProductVersion>("indicator");
+  const [dialogMonths, setDialogMonths] = useState<number>(1);
+  const [dialogIsTrial, setDialogIsTrial] = useState<boolean>(false);
 
   const { data: indicator, isLoading } = useQuery<Indicator>({
     queryKey: ["/api/indicators", params.slug],
@@ -189,54 +197,68 @@ export default function IndicatorDetail() {
 
   const indicatorVersionPrice = isFree ? "0" : indicator.price;
   const strategyVersionPrice = computeStrategyPrice(indicator.price);
-  const activePrice = selectedVersion === "strategy" ? strategyVersionPrice : indicatorVersionPrice;
-  const versionLabel = selectedVersion === "strategy" ? "Strategy" : "Indicator";
-  const conflict = !canAddVersion(selectedVersion);
+  const bothVersionPrice = computeBothPrice(indicator.price);
 
-  const handleAddToCart = () => {
+  const handleAddFromDialog = () => {
+    if (dialogIsTrial) {
+      const result = addTrial({
+        indicatorId: indicator.id,
+        name: indicator.name,
+        slug: indicator.slug,
+        price: indicator.price,
+        version: dialogVersion,
+      });
+      if (!result.ok && result.reason === "mixed") {
+        toast({
+          variant: "destructive",
+          title: "Can't mix versions",
+          description: `Your cart already has ${VERSION_LABELS[result.cartVersion as ProductVersion] || "items"}. Clear your cart or check out first.`,
+        });
+        return;
+      }
+      if (!result.ok && result.reason === "exists") {
+        toast({ variant: "destructive", title: "Already in cart", description: `${indicator.name} is already in your cart.` });
+        return;
+      }
+      window.dispatchEvent(new CustomEvent("cart-item-added"));
+      toast({ title: "Trial added", description: `${indicator.name} (${VERSION_LABELS[dialogVersion]}) trial has been added to your cart.` });
+      setPricingOpen(false);
+      return;
+    }
+    const monthlyPrice = computeVersionPrice(dialogVersion, indicatorVersionPrice);
     const result = addItem({
       indicatorId: indicator.id,
       name: indicator.name,
       slug: indicator.slug,
-      price: activePrice,
-      version: selectedVersion,
+      price: monthlyPrice,
+      version: dialogVersion,
+      duration: dialogMonths,
     });
     if (!result.ok && result.reason === "mixed") {
       toast({
         variant: "destructive",
-        title: "Can't mix Indicators and Strategies",
-        description: `Your cart already has ${result.cartVersion === "strategy" ? "Strategies" : "Indicators"}. Clear your cart or check out first.`,
+        title: "Can't mix versions",
+        description: `Your cart already has ${VERSION_LABELS[result.cartVersion as ProductVersion] || "items"}. Clear your cart or check out first.`,
       });
+      return;
+    }
+    if (!result.ok && result.reason === "exists") {
+      toast({ variant: "destructive", title: "Already in cart", description: `${indicator.name} is already in your cart.` });
       return;
     }
     window.dispatchEvent(new CustomEvent("cart-item-added"));
     toast({
-      title: parseFloat(activePrice) === 0 ? "Access added" : "Added to cart",
-      description: `${indicator.name} (${versionLabel}) has been added to your cart.`,
+      title: parseFloat(monthlyPrice) === 0 ? "Access added" : "Added to cart",
+      description: `${indicator.name} (${VERSION_LABELS[dialogVersion]}) · ${dialogMonths} ${dialogMonths === 1 ? "month" : "months"} added to your cart.`,
     });
+    setPricingOpen(false);
   };
 
-  const handleGetTrial = () => {
-    const result = addTrial({
-      indicatorId: indicator.id,
-      name: indicator.name,
-      slug: indicator.slug,
-      price: indicator.price,
-      version: selectedVersion,
-    });
-    if (!result.ok && result.reason === "mixed") {
-      toast({
-        variant: "destructive",
-        title: "Can't mix Indicators and Strategies",
-        description: `Your cart already has ${result.cartVersion === "strategy" ? "Strategies" : "Indicators"}. Clear your cart or check out first.`,
-      });
-      return;
-    }
-    window.dispatchEvent(new CustomEvent("cart-item-added"));
-    toast({
-      title: "Trial added",
-      description: `${indicator.name} (${versionLabel}) trial has been added to your cart.`,
-    });
+  const openPricing = () => {
+    setDialogVersion(selectedVersion);
+    setDialogMonths(1);
+    setDialogIsTrial(false);
+    setPricingOpen(true);
   };
 
   const inWatchlist = watchlist.includes(indicator.id);
@@ -397,7 +419,7 @@ export default function IndicatorDetail() {
                   <>
                     <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20" data-testid="badge-in-cart-version">
                       <CheckCircle2 className="mr-1 h-3 w-3" />
-                      Added: {cartItem?.version === "strategy" ? "Strategy" : "Indicator"}
+                      Added: {cartItem ? VERSION_LABELS[cartItem.version] : "Indicator"}
                       {cartItem?.isTrial ? " · Trial" : ""}
                     </Badge>
                     <Link href="/cart">
@@ -409,13 +431,12 @@ export default function IndicatorDetail() {
                 ) : (
                   <Button
                     size="lg"
-                    onClick={handleAddToCart}
-                    disabled={conflict}
+                    onClick={openPricing}
                     className="gap-2"
                     data-testid="button-get-access"
                   >
                     <Sparkles className="h-4 w-4" />
-                    {parseFloat(activePrice) === 0 ? "Get Free Access" : "Get Access"}
+                    {isFree ? "Get Free Access" : "Get Access"}
                   </Button>
                 )}
                 <Button
@@ -697,107 +718,6 @@ export default function IndicatorDetail() {
               {/* RIGHT SIDEBAR */}
               <aside className="lg:col-span-4 space-y-4">
                 <div className="lg:sticky lg:top-20 space-y-4">
-                  {/* Pricing card */}
-                  <Card className="border-card-border p-5">
-                    <div className="mb-4 flex items-center justify-between">
-                      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Pricing</h3>
-                      {!isFree && indicator.trialDays ? (
-                        <Badge variant="outline" className="text-[10px]">
-                          <Clock className="mr-1 h-3 w-3" /> {indicator.trialDays}-day trial
-                        </Badge>
-                      ) : null}
-                    </div>
-
-                    {/* Version selector */}
-                    <div className="space-y-2" role="radiogroup" aria-label="Select version">
-                      {([
-                        { key: "indicator" as ProductVersion, label: "Indicator", icon: LineChart, tagline: "Chart signals", price: indicatorVersionPrice, testId: "button-version-indicator" },
-                        { key: "strategy" as ProductVersion, label: "Strategy", icon: Cpu, tagline: "Auto entries & alerts", price: strategyVersionPrice, testId: "button-version-strategy" },
-                      ]).map(({ key, label, icon: VIcon, tagline, price, testId }) => {
-                        const active = selectedVersion === key;
-                        const isFreePrice = parseFloat(price) === 0;
-                        return (
-                          <button
-                            key={key}
-                            type="button"
-                            role="radio"
-                            aria-checked={active}
-                            onClick={() => setSelectedVersion(key)}
-                            className={`w-full rounded-lg border p-3 text-left transition-all hover-elevate ${
-                              active ? "border-primary/60 bg-primary/[0.04]" : "border-card-border"
-                            }`}
-                            data-testid={testId}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <VIcon className={`h-4 w-4 ${active ? "text-primary" : "text-muted-foreground"}`} />
-                                <div>
-                                  <p className="text-sm font-semibold leading-none">{label}</p>
-                                  <p className="mt-1 text-[11px] text-muted-foreground">{tagline}</p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="text-right">
-                                  {isFreePrice ? (
-                                    <span className="text-sm font-bold text-emerald-500" data-testid={`text-price-${key}`}>Free</span>
-                                  ) : (
-                                    <>
-                                      <span className="text-sm font-bold tracking-tight" data-testid={`text-price-${key}`}>
-                                        ₹{Number(price).toLocaleString("en-IN")}
-                                      </span>
-                                      <span className="text-[10px] text-muted-foreground">/mo</span>
-                                    </>
-                                  )}
-                                </div>
-                                <div className={`flex h-4 w-4 items-center justify-center rounded-full border ${active ? "border-primary bg-primary" : "border-muted-foreground/30"}`}>
-                                  {active && <Check className="h-2.5 w-2.5 text-primary-foreground" strokeWidth={3} />}
-                                </div>
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {conflict && (
-                      <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2.5" data-testid="alert-mixed-cart">
-                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
-                        <p className="text-[11.5px] leading-snug text-amber-600 dark:text-amber-300">
-                          Cart already has <span className="font-semibold">{cartVersion === "strategy" ? "Strategies" : "Indicators"}</span>. Clear cart or check out first.
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="mt-4 space-y-2">
-                      {inCart ? (
-                        <Link href="/cart">
-                          <Button className="w-full" size="lg" data-testid="button-sidebar-cart">
-                            <ShoppingCart className="mr-2 h-4 w-4" /> Go to Cart
-                          </Button>
-                        </Link>
-                      ) : (
-                        <>
-                          <Button className="w-full" size="lg" onClick={handleAddToCart} disabled={conflict} data-testid="button-sidebar-add">
-                            <ShoppingCart className="mr-2 h-4 w-4" />
-                            {parseFloat(activePrice) === 0 ? "Get Free Access" : `Add to Cart · ${versionLabel}`}
-                          </Button>
-                          {!isFree && (
-                            <Button variant="outline" className="w-full" size="lg" onClick={handleGetTrial} disabled={conflict} data-testid="button-sidebar-trial">
-                              Start {indicator.trialDays || 7}-Day Trial
-                            </Button>
-                          )}
-                        </>
-                      )}
-                    </div>
-
-                    <Separator className="my-4" />
-
-                    <div className="flex items-start gap-2 text-xs text-muted-foreground">
-                      <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                      <span><span className="font-medium text-foreground">7-Day Money Back Guarantee.</span> Not for you? Get a full refund — no questions asked.</span>
-                    </div>
-                  </Card>
-
                   {/* Compatibility */}
                   <Card className="border-card-border p-5">
                     <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -856,6 +776,187 @@ export default function IndicatorDetail() {
           </Tabs>
         </motion.div>
       </div>
+
+      {/* Pricing Dialog */}
+      <Dialog open={pricingOpen} onOpenChange={setPricingOpen}>
+        <DialogContent className="max-w-md p-0 overflow-hidden" data-testid="dialog-pricing">
+          <div className="p-5">
+            <DialogHeader className="mb-4 flex-row items-center justify-between space-y-0">
+              <DialogTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Pricing
+              </DialogTitle>
+              {!isFree && (
+                <Badge
+                  variant={dialogIsTrial ? "default" : "outline"}
+                  className="cursor-pointer text-[10px]"
+                  onClick={() => setDialogIsTrial((v) => !v)}
+                  data-testid="badge-toggle-trial"
+                >
+                  <Clock className="mr-1 h-3 w-3" /> {indicator.trialDays || 15}-day trial
+                </Badge>
+              )}
+            </DialogHeader>
+            <DialogDescription className="sr-only">Select version, duration and add to cart.</DialogDescription>
+
+            {/* Version selector */}
+            <div className="space-y-2" role="radiogroup" aria-label="Select version">
+              {([
+                { key: "indicator" as ProductVersion, label: "Indicator", icon: LineChart, tagline: "Chart signals", price: indicatorVersionPrice, testId: "dialog-version-indicator" },
+                { key: "strategy" as ProductVersion, label: "Strategy", icon: Cpu, tagline: "Auto entries & alerts", price: strategyVersionPrice, testId: "dialog-version-strategy" },
+                { key: "both" as ProductVersion, label: "Indicator + Strategy", icon: Sparkles, tagline: "Both versions bundled", price: bothVersionPrice, testId: "dialog-version-both" },
+              ]).map(({ key, label, icon: VIcon, tagline, price, testId }) => {
+                const active = dialogVersion === key;
+                const displayPrice = dialogIsTrial ? computeTrialPrice(key) : price;
+                const isFreePrice = parseFloat(displayPrice) === 0;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => setDialogVersion(key)}
+                    className={`w-full rounded-lg border p-3 text-left transition-all hover-elevate ${
+                      active ? "border-primary/60 bg-primary/[0.04]" : "border-card-border"
+                    }`}
+                    data-testid={testId}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <VIcon className={`h-4 w-4 ${active ? "text-primary" : "text-muted-foreground"}`} />
+                        <div>
+                          <p className="text-sm font-semibold leading-none">{label}</p>
+                          <p className="mt-1 text-[11px] text-muted-foreground">{tagline}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          {isFreePrice ? (
+                            <span className="text-sm font-bold text-emerald-500" data-testid={`text-dialog-price-${key}`}>Free</span>
+                          ) : (
+                            <>
+                              <span className="text-sm font-bold tracking-tight" data-testid={`text-dialog-price-${key}`}>
+                                ₹{Number(displayPrice).toLocaleString("en-IN")}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground">{dialogIsTrial ? "/trial" : "/mo"}</span>
+                            </>
+                          )}
+                        </div>
+                        <div className={`flex h-4 w-4 items-center justify-center rounded-full border ${active ? "border-primary bg-primary" : "border-muted-foreground/30"}`}>
+                          {active && <Check className="h-2.5 w-2.5 text-primary-foreground" strokeWidth={3} />}
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Duration selector (hidden when trial) */}
+            {!dialogIsTrial && (
+              <div className="mt-5" data-testid="duration-selector">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Duration</span>
+                  <span className="text-sm font-semibold tabular-nums" data-testid="text-dialog-months">
+                    {dialogMonths} {dialogMonths === 1 ? "month" : "months"}
+                  </span>
+                </div>
+                <Slider
+                  min={1}
+                  max={12}
+                  step={1}
+                  value={[dialogMonths]}
+                  onValueChange={(v) => setDialogMonths(v[0] ?? 1)}
+                  data-testid="slider-dialog-months"
+                />
+                <div className="mt-3 grid grid-cols-6 gap-1.5">
+                  {[1, 3, 6, 9, 12].map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setDialogMonths(m)}
+                      className={`col-span-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors hover-elevate ${
+                        dialogMonths === m ? "border-primary/60 bg-primary/[0.06] text-foreground" : "border-card-border text-muted-foreground"
+                      }`}
+                      data-testid={`button-dialog-months-${m}`}
+                    >
+                      {m}m
+                    </button>
+                  ))}
+                  <span className="col-span-1 text-right text-[10px] text-muted-foreground self-center">1–12</span>
+                </div>
+              </div>
+            )}
+
+            {/* Final price */}
+            <div className="mt-5 rounded-lg border border-card-border bg-muted/30 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Final Price</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {dialogIsTrial
+                      ? `${indicator.trialDays || 15}-day trial · ${VERSION_LABELS[dialogVersion]}`
+                      : `${VERSION_LABELS[dialogVersion]} · ${dialogMonths} ${dialogMonths === 1 ? "month" : "months"}`}
+                  </p>
+                </div>
+                <div className="text-right">
+                  {(() => {
+                    const monthly = parseFloat(computeVersionPrice(dialogVersion, indicatorVersionPrice));
+                    const total = dialogIsTrial
+                      ? parseFloat(computeTrialPrice(dialogVersion))
+                      : monthly * dialogMonths;
+                    return (
+                      <p className="text-2xl font-bold tracking-tight" data-testid="text-dialog-total">
+                        {total === 0 ? "Free" : `₹${Number(total).toLocaleString("en-IN")}`}
+                      </p>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            {!canAddVersion(dialogVersion) && (
+              <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2.5" data-testid="alert-dialog-mixed">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+                <p className="text-[11.5px] leading-snug text-amber-600 dark:text-amber-300">
+                  Cart already has <span className="font-semibold">{VERSION_LABELS[cartVersion as ProductVersion]}</span>. Clear cart or check out first.
+                </p>
+              </div>
+            )}
+
+            <div className="mt-4 space-y-2">
+              {inCart ? (
+                <Link href="/cart">
+                  <Button className="w-full" size="lg" data-testid="button-dialog-go-cart">
+                    <ShoppingCart className="mr-2 h-4 w-4" /> Go to Cart
+                  </Button>
+                </Link>
+              ) : (
+                <Button
+                  className="w-full"
+                  size="lg"
+                  onClick={handleAddFromDialog}
+                  disabled={!canAddVersion(dialogVersion)}
+                  data-testid="button-dialog-add-cart"
+                >
+                  <ShoppingCart className="mr-2 h-4 w-4" />
+                  {dialogIsTrial
+                    ? `Start ${indicator.trialDays || 15}-Day Trial`
+                    : parseFloat(computeVersionPrice(dialogVersion, indicatorVersionPrice)) === 0
+                    ? "Get Free Access"
+                    : `Add to Cart · ${VERSION_LABELS[dialogVersion]}`}
+                </Button>
+              )}
+            </div>
+
+            <Separator className="my-4" />
+
+            <div className="flex items-start gap-2 text-xs text-muted-foreground">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+              <span><span className="font-medium text-foreground">7-Day Money Back Guarantee.</span> Not for you? Get a full refund — no questions asked.</span>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
