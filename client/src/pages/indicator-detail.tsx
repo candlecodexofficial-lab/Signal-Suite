@@ -312,28 +312,44 @@ export default function IndicatorDetail() {
               </p>
 
               {/* Meta row: version / published / developer */}
-              {(indicator.versionLabel || indicator.publishedDate || indicator.developer) && (
-                <div className="mt-5 grid grid-cols-3 gap-4 rounded-lg border border-card-border bg-card/40 px-4 py-3" data-testid="meta-row">
-                  {indicator.versionLabel && (
-                    <div className="flex flex-col items-center gap-1 text-center" data-testid="meta-version">
-                      <Code2 className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs uppercase tracking-wider text-muted-foreground">{indicator.versionLabel}</span>
-                    </div>
-                  )}
-                  {indicator.publishedDate && (
-                    <div className="flex flex-col items-center gap-1 text-center" data-testid="meta-published">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs uppercase tracking-wider text-muted-foreground">{indicator.publishedDate}</span>
-                    </div>
-                  )}
-                  {indicator.developer && (
-                    <div className="flex flex-col items-center gap-1 text-center" data-testid="meta-developer">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">By</span>
-                      <span className="text-xs uppercase tracking-wider text-muted-foreground">{indicator.developer}</span>
-                    </div>
-                  )}
-                </div>
-              )}
+              {(indicator.versionLabel || indicator.publishedDate || indicator.developer) && (() => {
+                const items = [
+                  indicator.versionLabel && {
+                    key: "version",
+                    icon: <Code2 className="h-4 w-4 text-muted-foreground" />,
+                    label: indicator.versionLabel,
+                  },
+                  indicator.publishedDate && {
+                    key: "published",
+                    icon: <Calendar className="h-4 w-4 text-muted-foreground" />,
+                    label: indicator.publishedDate,
+                  },
+                  indicator.developer && {
+                    key: "developer",
+                    icon: <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">By</span>,
+                    label: indicator.developer,
+                  },
+                ].filter(Boolean) as { key: string; icon: JSX.Element; label: string }[];
+                return (
+                  <div
+                    className="mt-5 flex items-stretch divide-x divide-card-border rounded-lg border border-card-border bg-card/40"
+                    data-testid="meta-row"
+                  >
+                    {items.map((it) => (
+                      <div
+                        key={it.key}
+                        className="flex flex-1 flex-col items-center justify-center gap-1.5 px-4 py-3.5 text-center"
+                        data-testid={`meta-${it.key}`}
+                      >
+                        <div className="flex h-4 items-center justify-center">{it.icon}</div>
+                        <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-foreground/80">
+                          {it.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
 
               {/* Tags */}
               {indicator.tags && indicator.tags.length > 0 && (
@@ -399,9 +415,7 @@ export default function IndicatorDetail() {
                     data-testid="button-get-access"
                   >
                     <Sparkles className="h-4 w-4" />
-                    {parseFloat(activePrice) === 0
-                      ? "Get Free Access"
-                      : `Get Access — From ₹${Number(activePrice).toLocaleString("en-IN")}/mo`}
+                    {parseFloat(activePrice) === 0 ? "Get Free Access" : "Get Access"}
                   </Button>
                 )}
                 <Button
