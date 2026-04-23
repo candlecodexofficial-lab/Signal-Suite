@@ -466,7 +466,7 @@ export default function IndicatorDetail() {
                     />
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                       <StatCell icon={Target} label="Win Rate" value={indicator.winRate || "—"} accent="text-emerald-500" />
-                      <StatCell icon={TrendingUp} label="Avg RR" value={`1:${stats.avgRR}`} />
+                      <StatCell icon={TrendingUp} label="Avg RR" value={stats.avgRR} />
                       <StatCell icon={Activity} label="Total Signals" value={indicator.totalTrades || "—"} />
                       <StatCell icon={Zap} label="Profit Factor" value={stats.profitFactor} accent="text-amber-500" />
                       <StatCell icon={Award} label="Best Market" value={stats.bestMarket} />
@@ -585,7 +585,7 @@ export default function IndicatorDetail() {
                       <StatCell icon={TrendingUp} label="Avg Return" value={indicator.avgReturn || "—"} accent="text-emerald-500" />
                       <StatCell icon={Activity} label="Total Signals" value={indicator.totalTrades || "—"} />
                       <StatCell icon={Zap} label="Profit Factor" value={stats.profitFactor} accent="text-amber-500" />
-                      <StatCell icon={LineChart} label="Avg RR" value={`1:${stats.avgRR}`} />
+                      <StatCell icon={LineChart} label="Avg RR" value={stats.avgRR} />
                     </div>
                     <p className="mt-4 text-xs text-muted-foreground">
                       Performance numbers are based on historical signals across {stats.bestMarket} and similar instruments. Past performance does not guarantee future returns.
@@ -597,15 +597,31 @@ export default function IndicatorDetail() {
                 <TabsContent value="reviews" className="m-0">
                   <Card className="border-card-border p-10" data-testid="reviews-empty">
                     <div className="flex flex-col items-center gap-3 text-center">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                      <div className="flex items-center gap-2" data-testid="reviews-rating-summary">
+                        <div className="flex items-center gap-0.5">
+                          {[0, 1, 2, 3, 4].map((i) => (
+                            <Star
+                              key={i}
+                              className={`h-5 w-5 ${i < Math.round(stats.rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"}`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-2xl font-bold tracking-tight" data-testid="text-reviews-tab-rating">
+                          {stats.rating.toFixed(1)}
+                        </span>
+                        <span className="text-sm text-muted-foreground" data-testid="text-reviews-tab-count">
+                          ({stats.reviews.toLocaleString("en-IN")} Reviews)
+                        </span>
+                      </div>
+                      <div className="mt-2 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
                         <MessageSquare className="h-5 w-5 text-muted-foreground" />
                       </div>
                       <h2 className="text-lg font-semibold">No reviews yet</h2>
                       <p className="max-w-md text-sm text-muted-foreground">
-                        Be the first to share your experience with {indicator.name}. Your feedback helps other traders make better decisions.
+                        Be the first to review {indicator.name}. Share your experience to help other traders make better decisions.
                       </p>
                       <Button variant="outline" className="mt-2" data-testid="button-write-review">
-                        <Star className="mr-2 h-4 w-4" /> Write a Review
+                        <Star className="mr-2 h-4 w-4" /> Be the First to Review
                       </Button>
                     </div>
                   </Card>
