@@ -52,6 +52,13 @@ const EMPTY: FormState = {
   recommendedSettings: "",
   nonRepainting: false,
   faqs: [],
+  tags: [],
+  avgRR: "",
+  profitFactor: "",
+  bestMarket: "",
+  tradingViewSymbol: "",
+  rating: "",
+  reviewCount: 0,
 };
 
 function slugify(s: string) {
@@ -295,6 +302,15 @@ function IndicatorFormDialog({
       stopLossStrategy: initial.stopLossStrategy || "",
       targetStrategy: initial.targetStrategy || "",
       recommendedSettings: initial.recommendedSettings || "",
+      nonRepainting: initial.nonRepainting ?? false,
+      faqs: initial.faqs || [],
+      tags: initial.tags || [],
+      avgRR: initial.avgRR || "",
+      profitFactor: initial.profitFactor || "",
+      bestMarket: initial.bestMarket || "",
+      tradingViewSymbol: initial.tradingViewSymbol || "",
+      rating: initial.rating || "",
+      reviewCount: initial.reviewCount ?? 0,
     };
   };
 
@@ -302,6 +318,10 @@ function IndicatorFormDialog({
   const [featuresText, setFeaturesText] = useState(arrToText(initial?.features));
   const [marketsText, setMarketsText] = useState(arrToText(initial?.markets));
   const [timeframesText, setTimeframesText] = useState(arrToText(initial?.bestTimeframes));
+  const [tagsText, setTagsText] = useState(arrToText(initial?.tags));
+  const [faqsText, setFaqsText] = useState<string>(
+    (initial?.faqs || []).map((f) => `${f.q}\n${f.a}`).join("\n---\n")
+  );
 
   // Reset state when dialog opens with different indicator
   useMemo(() => {
@@ -311,6 +331,8 @@ function IndicatorFormDialog({
       setFeaturesText(arrToText(next.features));
       setMarketsText(arrToText(next.markets));
       setTimeframesText(arrToText(next.bestTimeframes));
+      setTagsText(arrToText(next.tags as string[] | undefined));
+      setFaqsText(((next.faqs as { q: string; a: string }[] | undefined) || []).map((f) => `${f.q}\n${f.a}`).join("\n---\n"));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initial?.id]);
@@ -336,6 +358,23 @@ function IndicatorFormDialog({
         stopLossStrategy: form.stopLossStrategy || null,
         targetStrategy: form.targetStrategy || null,
         recommendedSettings: form.recommendedSettings || null,
+        tags: textToArr(tagsText),
+        avgRR: form.avgRR || null,
+        profitFactor: form.profitFactor || null,
+        bestMarket: form.bestMarket || null,
+        tradingViewSymbol: form.tradingViewSymbol || null,
+        rating: form.rating || null,
+        reviewCount: typeof form.reviewCount === "number" ? form.reviewCount : parseInt(String(form.reviewCount || 0)) || 0,
+        nonRepainting: !!form.nonRepainting,
+        faqs: faqsText
+          .split(/\n---\n/)
+          .map((block) => block.trim())
+          .filter(Boolean)
+          .map((block) => {
+            const [q, ...rest] = block.split("\n");
+            return { q: (q || "").trim(), a: rest.join("\n").trim() };
+          })
+          .filter((f) => f.q && f.a),
       };
       if (isCreate || !initial?.id) {
         const res = await apiRequest("POST", "/api/admin/indicators", payload);
@@ -478,7 +517,79 @@ function IndicatorFormDialog({
                     placeholder="1,200" data-testid="input-total-trades"
                   />
                 </Field>
+                <Field label="Avg R:R" hint="e.g. 1:2.4">
+                  <Input value={form.avgRR || ""}
+                    onChange={(e) => update("avgRR", e.target.value)}
+                    placeholder="1:2.4" data-testid="input-avg-rr"
+                  />
+                </Field>
+                <Field label="Profit Factor" hint="e.g. 2.1">
+                  <Input value={form.profitFactor || ""}
+                    onChange={(e) => update("profitFactor", e.target.value)}
+                    placeholder="2.1" data-testid="input-profit-factor"
+                  />
+                </Field>
+                <Field label="Best Market" hint="e.g. NIFTY 50 / BTCUSDT">
+                  <Input value={form.bestMarket || ""}
+                    onChange={(e) => update("bestMarket", e.target.value)}
+                    placeholder="NIFTY 50" data-testid="input-best-market"
+                  />
+                </Field>
+                <Field label="Rating" hint="0.0–5.0">
+                  <Input value={form.rating || ""}
+                    onChange={(e) => update("rating", e.target.value)}
+                    placeholder="4.9" data-testid="input-rating"
+                  />
+                </Field>
+                <Field label="Review Count" hint="Total reviews">
+                  <Input type="number" min="0" value={form.reviewCount ?? 0}
+                    onChange={(e) => update("reviewCount", parseInt(e.target.value) || 0)}
+                    placeholder="251" data-testid="input-review-count"
+                  />
+                </Field>
+                <Field label="TradingView Symbol" hint="e.g. NSE:NIFTY">
+                  <Input value={form.tradingViewSymbol || ""}
+                    onChange={(e) => update("tradingViewSymbol", e.target.value)}
+                    placeholder="NSE:NIFTY" data-testid="input-tv-symbol"
+                  />
+                </Field>
               </div>
+            </Section>
+
+            {/* Section: Tags & Flags */}
+            <Section title="Tags & Flags" icon={Tag}>
+              <Field label="Tags" hint="One per line — e.g. Multi-timeframe, Confluence, Algorithmic">
+                <Textarea value={tagsText}
+                  onChange={(e) => setTagsText(e.target.value)}
+                  rows={3} placeholder={"Multi-timeframe\nConfluence\nAlgorithmic"}
+                  className="font-mono text-xs" data-testid="input-tags"
+                />
+              </Field>
+              <div className="flex items-center gap-2">
+                <input
+                  id="non-repainting"
+                  type="checkbox"
+                  checked={!!form.nonRepainting}
+                  onChange={(e) => update("nonRepainting", e.target.checked)}
+                  className="h-4 w-4 rounded border-input"
+                  data-testid="input-non-repainting"
+                />
+                <Label htmlFor="non-repainting" className="text-xs font-medium cursor-pointer">
+                  Non-Repainting (signals never recalculate)
+                </Label>
+              </div>
+            </Section>
+
+            {/* Section: FAQs */}
+            <Section title="FAQs">
+              <Field label="FAQs" hint="Question on first line, answer on next line(s). Separate FAQs with a line containing only ---">
+                <Textarea value={faqsText}
+                  onChange={(e) => setFaqsText(e.target.value)}
+                  rows={8}
+                  placeholder={"Does this indicator repaint?\nNo, all signals are confirmed at bar close.\n---\nWhat timeframes are supported?\nAll timeframes from 1m to 1D are supported."}
+                  className="font-mono text-xs" data-testid="input-faqs"
+                />
+              </Field>
             </Section>
 
             {/* Section: Media */}

@@ -29,15 +29,18 @@ function generateCandles(seed: number, count: number): Candle[] {
   return candles;
 }
 
+type ChartVariant = "hero" | "signal-example";
+
 interface ChartPreviewProps {
   symbol?: string;
   seed?: number;
   className?: string;
+  variant?: ChartVariant;
 }
 
 const TIMEFRAMES = ["5m", "15m", "1H", "4H", "1D"];
 
-export function ChartPreview({ symbol = "NIFTY 50", seed = 42, className = "" }: ChartPreviewProps) {
+export function ChartPreview({ symbol = "NIFTY 50", seed = 42, className = "", variant = "hero" }: ChartPreviewProps) {
   const candles = useMemo(() => generateCandles(seed, 36), [seed]);
 
   const { minP, maxP } = useMemo(() => {
@@ -146,30 +149,80 @@ export function ChartPreview({ symbol = "NIFTY 50", seed = 42, className = "" }:
             );
           })}
 
-          {/* Liquidity Sweep marker */}
-          <g>
-            <circle cx={padL + sweepIdx * cw + cw / 2} cy={yScale(candles[sweepIdx].h) - 6} r="3" fill="#a855f7" />
-            <text x={padL + sweepIdx * cw + cw / 2 + 6} y={yScale(candles[sweepIdx].h) - 4}
-              fill="#c4b5fd" fontSize="9" fontFamily="system-ui">Liquidity Sweep</text>
-          </g>
-          {/* SELL marker */}
-          <g>
-            <polygon
-              points={`${padL + sellIdx * cw + cw / 2 - 4},${yScale(candles[sellIdx].h) - 10} ${padL + sellIdx * cw + cw / 2 + 4},${yScale(candles[sellIdx].h) - 10} ${padL + sellIdx * cw + cw / 2},${yScale(candles[sellIdx].h) - 4}`}
-              fill="#ef4444"
-            />
-            <text x={padL + sellIdx * cw + cw / 2 + 6} y={yScale(candles[sellIdx].h) - 8}
-              fill="#fca5a5" fontSize="9" fontWeight="600" fontFamily="system-ui">SELL</text>
-          </g>
-          {/* BUY marker */}
-          <g>
-            <polygon
-              points={`${padL + buyIdx * cw + cw / 2 - 4},${yScale(candles[buyIdx].l) + 10} ${padL + buyIdx * cw + cw / 2 + 4},${yScale(candles[buyIdx].l) + 10} ${padL + buyIdx * cw + cw / 2},${yScale(candles[buyIdx].l) + 4}`}
-              fill="#22c55e"
-            />
-            <text x={padL + buyIdx * cw + cw / 2 + 6} y={yScale(candles[buyIdx].l) + 12}
-              fill="#86efac" fontSize="9" fontWeight="600" fontFamily="system-ui">BUY</text>
-          </g>
+          {variant === "hero" && (
+            <>
+              {/* Hero: minimal Liquidity Sweep + SELL + BUY annotations */}
+              <g>
+                <circle cx={padL + sweepIdx * cw + cw / 2} cy={yScale(candles[sweepIdx].h) - 6} r="3" fill="#a855f7" />
+                <text x={padL + sweepIdx * cw + cw / 2 + 6} y={yScale(candles[sweepIdx].h) - 4}
+                  fill="#c4b5fd" fontSize="9" fontFamily="system-ui">Liquidity Sweep</text>
+              </g>
+              <g>
+                <polygon
+                  points={`${padL + sellIdx * cw + cw / 2 - 4},${yScale(candles[sellIdx].h) - 10} ${padL + sellIdx * cw + cw / 2 + 4},${yScale(candles[sellIdx].h) - 10} ${padL + sellIdx * cw + cw / 2},${yScale(candles[sellIdx].h) - 4}`}
+                  fill="#ef4444"
+                />
+                <text x={padL + sellIdx * cw + cw / 2 + 6} y={yScale(candles[sellIdx].h) - 8}
+                  fill="#fca5a5" fontSize="9" fontWeight="600" fontFamily="system-ui">SELL</text>
+              </g>
+              <g>
+                <polygon
+                  points={`${padL + buyIdx * cw + cw / 2 - 4},${yScale(candles[buyIdx].l) + 10} ${padL + buyIdx * cw + cw / 2 + 4},${yScale(candles[buyIdx].l) + 10} ${padL + buyIdx * cw + cw / 2},${yScale(candles[buyIdx].l) + 4}`}
+                  fill="#22c55e"
+                />
+                <text x={padL + buyIdx * cw + cw / 2 + 6} y={yScale(candles[buyIdx].l) + 12}
+                  fill="#86efac" fontSize="9" fontWeight="600" fontFamily="system-ui">BUY</text>
+              </g>
+            </>
+          )}
+
+          {variant === "signal-example" && (
+            <>
+              {/* Signal-example: detailed entry / SL / TP / R:R box */}
+              {(() => {
+                const entryX = padL + buyIdx * cw + cw / 2;
+                const entryY = yScale(candles[buyIdx].l);
+                const slY = yScale(minP + (maxP - minP) * 0.06);
+                const tpY = yScale(maxP - (maxP - minP) * 0.10);
+                return (
+                  <>
+                    {/* TP zone */}
+                    <rect x={entryX} y={tpY} width={W - padR - entryX} height={Math.max(2, entryY - tpY)}
+                      fill="#22c55e" opacity="0.08" />
+                    {/* SL zone */}
+                    <rect x={entryX} y={entryY} width={W - padR - entryX} height={Math.max(2, slY - entryY)}
+                      fill="#ef4444" opacity="0.08" />
+                    {/* Entry line */}
+                    <line x1={entryX} y1={entryY} x2={W - padR} y2={entryY}
+                      stroke="#3b82f6" strokeWidth="1" strokeDasharray="2 2" />
+                    <text x={W - padR + 4} y={entryY + 3} fill="#60a5fa" fontSize="9" fontFamily="system-ui">Entry</text>
+                    {/* TP line */}
+                    <line x1={entryX} y1={tpY} x2={W - padR} y2={tpY}
+                      stroke="#22c55e" strokeWidth="1" strokeDasharray="2 2" />
+                    <text x={W - padR + 4} y={tpY + 3} fill="#86efac" fontSize="9" fontFamily="system-ui">TP</text>
+                    {/* SL line */}
+                    <line x1={entryX} y1={slY} x2={W - padR} y2={slY}
+                      stroke="#ef4444" strokeWidth="1" strokeDasharray="2 2" />
+                    <text x={W - padR + 4} y={slY + 3} fill="#fca5a5" fontSize="9" fontFamily="system-ui">SL</text>
+                    {/* Entry triangle */}
+                    <polygon
+                      points={`${entryX - 5},${entryY + 12} ${entryX + 5},${entryY + 12} ${entryX},${entryY + 4}`}
+                      fill="#3b82f6"
+                    />
+                    <text x={entryX + 8} y={entryY + 14}
+                      fill="#93c5fd" fontSize="9" fontWeight="600" fontFamily="system-ui">LONG ENTRY</text>
+                    {/* R:R label */}
+                    <g>
+                      <rect x={entryX - 70} y={tpY - 22} width="62" height="16" rx="3"
+                        fill="#0f172a" stroke="#334155" strokeWidth="0.5" />
+                      <text x={entryX - 39} y={tpY - 11} textAnchor="middle"
+                        fill="#e2e8f0" fontSize="9" fontWeight="600" fontFamily="system-ui">R:R 1:2.4</text>
+                    </g>
+                  </>
+                );
+              })()}
+            </>
+          )}
         </svg>
       </div>
     </div>

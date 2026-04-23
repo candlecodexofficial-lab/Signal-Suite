@@ -55,13 +55,23 @@ function deriveStats(indicator: Indicator) {
   const winRate = parsePct(indicator.winRate);
   const avgReturn = parsePct(indicator.avgReturn);
   const totalTrades = parseInt2(indicator.totalTrades);
-  // Pseudo-deterministic but content-driven values for display
-  const ratingBase = 4.5 + Math.min(0.5, winRate / 200);
-  const rating = Math.round(ratingBase * 10) / 10;
-  const reviews = 80 + (indicator.id * 17) % 220;
-  const avgRR = (1.5 + Math.min(2.5, winRate / 30)).toFixed(2);
-  const profitFactor = (1.2 + Math.min(1.8, avgReturn)).toFixed(2);
-  const bestMarket = (indicator.markets && indicator.markets[0]) || "Nifty 50";
+  // Prefer admin-configured values; fall back to deterministic derivations.
+  const ratingFromDb = indicator.rating ? parseFloat(indicator.rating) : NaN;
+  const rating = !isNaN(ratingFromDb) && ratingFromDb > 0
+    ? Math.round(ratingFromDb * 10) / 10
+    : Math.round((4.5 + Math.min(0.5, winRate / 200)) * 10) / 10;
+  const reviews = typeof indicator.reviewCount === "number" && indicator.reviewCount > 0
+    ? indicator.reviewCount
+    : 80 + (indicator.id * 17) % 220;
+  const avgRR = indicator.avgRR && indicator.avgRR.trim()
+    ? indicator.avgRR.trim()
+    : `1:${(1.5 + Math.min(2.5, winRate / 30)).toFixed(2)}`;
+  const profitFactor = indicator.profitFactor && indicator.profitFactor.trim()
+    ? indicator.profitFactor.trim()
+    : (1.2 + Math.min(1.8, avgReturn)).toFixed(2);
+  const bestMarket = indicator.bestMarket && indicator.bestMarket.trim()
+    ? indicator.bestMarket.trim()
+    : (indicator.markets && indicator.markets[0]) || "Nifty 50";
   return { winRate, avgReturn, totalTrades, rating, reviews, avgRR, profitFactor, bestMarket };
 }
 
@@ -300,6 +310,33 @@ export default function IndicatorDetail() {
                 {indicator.shortDescription}
               </p>
 
+              {/* Tags */}
+              {indicator.tags && indicator.tags.length > 0 && (
+                <div className="mt-4 flex flex-wrap items-center gap-2" data-testid="tags-block">
+                  {indicator.tags.map((t, i) => {
+                    const palettes = [
+                      "border-blue-500/30 bg-blue-500/10 text-blue-400",
+                      "border-violet-500/30 bg-violet-500/10 text-violet-400",
+                      "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+                      "border-amber-500/30 bg-amber-500/10 text-amber-400",
+                      "border-rose-500/30 bg-rose-500/10 text-rose-400",
+                      "border-cyan-500/30 bg-cyan-500/10 text-cyan-400",
+                    ];
+                    const cls = palettes[i % palettes.length];
+                    return (
+                      <Badge
+                        key={`${t}-${i}`}
+                        variant="outline"
+                        className={cls}
+                        data-testid={`badge-tag-${i}`}
+                      >
+                        {t}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              )}
+
               {/* Rating */}
               <div className="mt-5 flex items-center gap-3" data-testid="rating-block">
                 <div className="flex items-center gap-0.5">
@@ -358,7 +395,8 @@ export default function IndicatorDetail() {
 
             {/* Hero Chart */}
             <ChartPreview
-              symbol={stats.bestMarket}
+              variant="hero"
+              symbol={indicator.tradingViewSymbol || stats.bestMarket}
               seed={indicator.id * 31 + indicator.name.length}
             />
           </div>
@@ -421,8 +459,9 @@ export default function IndicatorDetail() {
                       </Badge>
                     </div>
                     <ChartPreview
-                      symbol={stats.bestMarket}
+                      symbol={indicator.tradingViewSymbol || stats.bestMarket}
                       seed={indicator.id * 97 + 11}
+                      variant="signal-example"
                       className="mb-5"
                     />
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">

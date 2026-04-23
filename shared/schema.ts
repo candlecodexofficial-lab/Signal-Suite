@@ -29,6 +29,13 @@ export const indicators = pgTable("indicators", {
   recommendedSettings: text("recommended_settings"),
   nonRepainting: boolean("non_repainting").default(false),
   faqs: jsonb("faqs").$type<{ q: string; a: string }[]>().default(sql`'[]'::jsonb`),
+  tags: text("tags").array().default(sql`ARRAY[]::text[]`),
+  avgRR: text("avg_rr"),
+  profitFactor: text("profit_factor"),
+  bestMarket: text("best_market"),
+  tradingViewSymbol: text("trading_view_symbol"),
+  rating: text("rating"),
+  reviewCount: integer("review_count").default(0),
 });
 
 export const users = pgTable("users", {
