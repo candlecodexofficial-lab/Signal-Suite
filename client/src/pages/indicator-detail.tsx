@@ -101,13 +101,24 @@ function StatCell({ icon: Icon, label, value, accent }: {
   );
 }
 
-const FAQ_ITEMS = [
-  { q: "Does this indicator repaint?", a: "No. All signals are confirmed on candle close and never repaint, so what you see in backtests is what you get live." },
-  { q: "How do I get access on TradingView?", a: "Once your purchase is approved by our team (usually within a few hours), the indicator is invited to your TradingView username and appears under your Invite-Only Scripts." },
-  { q: "Which broker or platform do I need?", a: "Anything that connects to TradingView charts. The indicator works on the free TradingView plan and on all paid tiers." },
-  { q: "Can I get a refund if it's not for me?", a: "Yes — every purchase is covered by a 7-day money-back guarantee. If it doesn't fit your style, we refund you, no questions asked." },
-  { q: "Will I receive future updates?", a: "Yes. As long as your subscription is active, you receive every new feature, optimization, and bug fix automatically." },
-];
+const WATCHLIST_KEY = "tradevault.watchlist";
+
+function readWatchlist(): number[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(WATCHLIST_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "number") : [];
+  } catch {
+    return [];
+  }
+}
+function writeWatchlist(ids: number[]) {
+  try {
+    window.localStorage.setItem(WATCHLIST_KEY, JSON.stringify(ids));
+  } catch {}
+}
 
 export default function IndicatorDetail() {
   const params = useParams<{ slug: string }>();
@@ -115,6 +126,7 @@ export default function IndicatorDetail() {
   const { toast } = useToast();
   const [selectedVersion, setSelectedVersion] = useState<ProductVersion>("indicator");
   const [activeTab, setActiveTab] = useState("overview");
+  const [watchlist, setWatchlist] = useState<number[]>(() => readWatchlist());
 
   const { data: indicator, isLoading } = useQuery<Indicator>({
     queryKey: ["/api/indicators", params.slug],
@@ -216,12 +228,23 @@ export default function IndicatorDetail() {
     });
   };
 
+  const inWatchlist = watchlist.includes(indicator.id);
   const handleWatchlist = () => {
+    const next = inWatchlist
+      ? watchlist.filter((id) => id !== indicator.id)
+      : [...watchlist, indicator.id];
+    setWatchlist(next);
+    writeWatchlist(next);
     toast({
-      title: "Saved for later",
-      description: `${indicator.name} added to your watchlist.`,
+      title: inWatchlist ? "Removed from watchlist" : "Saved to watchlist",
+      description: inWatchlist
+        ? `${indicator.name} was removed from your watchlist.`
+        : `${indicator.name} was added to your watchlist.`,
     });
   };
+  const faqItems = (indicator.faqs && Array.isArray(indicator.faqs) ? indicator.faqs : []).filter(
+    (f) => f && typeof f.q === "string" && typeof f.a === "string"
+  );
 
   const settingsBlocks = indicator.recommendedSettings
     ? indicator.recommendedSettings.split("\n").map((b) => {
@@ -251,9 +274,11 @@ export default function IndicatorDetail() {
           <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-400 gap-1" data-testid="badge-non-repainting">
-                  <ShieldCheck className="h-3 w-3" /> Non-Repainting
-                </Badge>
+                {indicator.nonRepainting && (
+                  <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-400 gap-1" data-testid="badge-non-repainting">
+                    <ShieldCheck className="h-3 w-3" /> Non-Repainting
+                  </Badge>
+                )}
                 <Badge variant="outline" className={categoryClass} data-testid="badge-category">
                   <Icon className="mr-1 h-3 w-3" /> {indicator.category}
                 </Badge>
@@ -317,8 +342,16 @@ export default function IndicatorDetail() {
                       : `Get Access — From ₹${Number(activePrice).toLocaleString("en-IN")}/mo`}
                   </Button>
                 )}
-                <Button variant="outline" size="lg" onClick={handleWatchlist} data-testid="button-watchlist">
-                  <Bookmark className="mr-2 h-4 w-4" /> Add to Watchlist
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handleWatchlist}
+                  className={inWatchlist ? "border-primary/50 text-primary" : ""}
+                  aria-pressed={inWatchlist}
+                  data-testid="button-watchlist"
+                >
+                  <Bookmark className={`mr-2 h-4 w-4 ${inWatchlist ? "fill-primary" : ""}`} />
+                  {inWatchlist ? "Saved to Watchlist" : "Add to Watchlist"}
                 </Button>
               </div>
             </div>
@@ -463,7 +496,15 @@ export default function IndicatorDetail() {
                           </Card>
                         )}
                       </div>
-                    ) : null
+                    ) : (
+                      <div data-testid="risk-management-locked">
+                        <div className="mb-3 flex items-center gap-2">
+                          <Crosshair className="h-4 w-4 text-amber-500" />
+                          <h3 className="font-semibold">Risk Management</h3>
+                        </div>
+                        <LockedBlock message={lockMessage} />
+                      </div>
+                    )
                   )}
                 </TabsContent>
 
@@ -514,57 +555,47 @@ export default function IndicatorDetail() {
                 </TabsContent>
 
                 {/* REVIEWS */}
-                <TabsContent value="reviews" className="m-0 space-y-4">
-                  <Card className="border-card-border p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h2 className="text-lg font-semibold">Trader Reviews</h2>
-                        <p className="text-xs text-muted-foreground mt-0.5">{stats.reviews} verified buyers</p>
+                <TabsContent value="reviews" className="m-0">
+                  <Card className="border-card-border p-10" data-testid="reviews-empty">
+                    <div className="flex flex-col items-center gap-3 text-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                        <MessageSquare className="h-5 w-5 text-muted-foreground" />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-3xl font-bold">{stats.rating.toFixed(1)}</span>
-                        <div className="flex">
-                          {[0,1,2,3,4].map((i) => (
-                            <Star key={i} className={`h-4 w-4 ${i < Math.round(stats.rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"}`} />
-                          ))}
-                        </div>
-                      </div>
+                      <h2 className="text-lg font-semibold">No reviews yet</h2>
+                      <p className="max-w-md text-sm text-muted-foreground">
+                        Be the first to share your experience with {indicator.name}. Your feedback helps other traders make better decisions.
+                      </p>
+                      <Button variant="outline" className="mt-2" data-testid="button-write-review">
+                        <Star className="mr-2 h-4 w-4" /> Write a Review
+                      </Button>
                     </div>
                   </Card>
-                  {[
-                    { name: "Rohit M.", role: "Intraday Trader", days: 8, stars: 5, text: `Clean signals on ${stats.bestMarket}. The non-repainting nature gives me confidence to act on every alert. Already paid for itself this month.` },
-                    { name: "Priya S.", role: "Swing Trader", days: 21, stars: 5, text: "Recommended settings worked out of the box. Stop loss placement is exactly where I'd put it manually." },
-                    { name: "Arjun K.", role: "Options Trader", days: 45, stars: 4, text: "Great tool for confluence with my own setups. Would love a few more market presets, but the core signal quality is excellent." },
-                  ].map((r, i) => (
-                    <Card key={i} className="border-card-border p-5" data-testid={`review-${i}`}>
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="font-semibold text-sm">{r.name}</p>
-                          <p className="text-xs text-muted-foreground">{r.role} · {r.days} days ago</p>
-                        </div>
-                        <div className="flex">
-                          {[0,1,2,3,4].map((s) => (
-                            <Star key={s} className={`h-3.5 w-3.5 ${s < r.stars ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"}`} />
-                          ))}
-                        </div>
-                      </div>
-                      <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{r.text}</p>
-                    </Card>
-                  ))}
                 </TabsContent>
 
                 {/* FAQ */}
                 <TabsContent value="faq" className="m-0">
                   <Card className="border-card-border p-6">
                     <h2 className="mb-4 text-lg font-semibold">Frequently Asked Questions</h2>
-                    <Accordion type="single" collapsible className="w-full">
-                      {FAQ_ITEMS.map((item, i) => (
-                        <AccordionItem key={i} value={`item-${i}`} data-testid={`faq-${i}`}>
-                          <AccordionTrigger className="text-sm font-medium text-left">{item.q}</AccordionTrigger>
-                          <AccordionContent className="text-sm text-muted-foreground leading-relaxed">{item.a}</AccordionContent>
-                        </AccordionItem>
-                      ))}
-                    </Accordion>
+                    {faqItems.length > 0 ? (
+                      <Accordion type="single" collapsible className="w-full">
+                        {faqItems.map((item, i) => (
+                          <AccordionItem key={i} value={`item-${i}`} data-testid={`faq-${i}`}>
+                            <AccordionTrigger className="text-sm font-medium text-left">{item.q}</AccordionTrigger>
+                            <AccordionContent className="text-sm text-muted-foreground leading-relaxed">{item.a}</AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 py-8 text-center" data-testid="faq-empty">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                          <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <p className="text-sm font-medium">No FAQs yet</p>
+                        <p className="max-w-md text-xs text-muted-foreground">
+                          Have a question about {indicator.name}? Reach out to our support team and we'll add it here.
+                        </p>
+                      </div>
+                    )}
                   </Card>
                 </TabsContent>
               </div>

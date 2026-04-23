@@ -1,4 +1,5 @@
-import { pgTable, text, serial, integer, boolean, decimal, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, decimal, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -26,6 +27,8 @@ export const indicators = pgTable("indicators", {
   stopLossStrategy: text("stop_loss_strategy"),
   targetStrategy: text("target_strategy"),
   recommendedSettings: text("recommended_settings"),
+  nonRepainting: boolean("non_repainting").default(false),
+  faqs: jsonb("faqs").$type<{ q: string; a: string }[]>().default(sql`'[]'::jsonb`),
 });
 
 export const users = pgTable("users", {
@@ -60,7 +63,9 @@ export const orderItems = pgTable("order_items", {
   version: text("version").default("indicator"),
 });
 
-export const insertIndicatorSchema = createInsertSchema(indicators).omit({ id: true });
+export const insertIndicatorSchema = createInsertSchema(indicators).omit({ id: true }).extend({
+  faqs: z.array(z.object({ q: z.string(), a: z.string() })).default([]).optional(),
+});
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, isAdmin: true }).extend({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
   lastName: z.string().min(2, "Last name must be at least 2 characters"),

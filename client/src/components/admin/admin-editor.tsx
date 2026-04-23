@@ -50,6 +50,8 @@ const EMPTY: FormState = {
   stopLossStrategy: "",
   targetStrategy: "",
   recommendedSettings: "",
+  nonRepainting: false,
+  faqs: [],
 };
 
 function slugify(s: string) {
