@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { ArrowUpRight, Crown, Code2, CalendarDays, Check, ShoppingCart } from "lucide-react";
+import { ArrowRight, Crown, Code2, CalendarDays, Check, ShoppingCart, Star, Bookmark } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,59 +10,61 @@ import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Indicator } from "@shared/schema";
 
+const WATCHLIST_KEY = "tradevault.watchlist";
+
+function readWatchlistIds(): number[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(WATCHLIST_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((n) => typeof n === "number") : [];
+  } catch {
+    return [];
+  }
+}
+
 export function IndicatorCard({ indicator }: { indicator: Indicator }) {
-  const { addItem, addTrial, isInCart, getCartItem, canAddVersion, cartVersion } = useCart();
+  const { isInCart, getCartItem, canAddVersion } = useCart();
   const { toast } = useToast();
   const inCart = isInCart(indicator.id);
   const cartItem = getCartItem(indicator.id);
   const isFree = indicator.tier === "free";
   const [justAdded, setJustAdded] = useState(false);
   const blockedByMix = !canAddVersion("indicator");
+  const [watchlist, setWatchlist] = useState<number[]>(() => readWatchlistIds());
+  const inWatchlist = watchlist.includes(indicator.id);
+
+  useEffect(() => {
+    const sync = () => setWatchlist(readWatchlistIds());
+    window.addEventListener("storage", sync);
+    window.addEventListener("watchlist-updated", sync);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("watchlist-updated", sync);
+    };
+  }, []);
+
+  const handleWatchlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const next = inWatchlist
+      ? watchlist.filter((id) => id !== indicator.id)
+      : [...watchlist, indicator.id];
+    setWatchlist(next);
+    try { localStorage.setItem(WATCHLIST_KEY, JSON.stringify(next)); } catch {}
+    window.dispatchEvent(new Event("watchlist-updated"));
+    toast({
+      title: inWatchlist ? "Removed from watchlist" : "Saved to watchlist",
+      description: inWatchlist
+        ? `${indicator.name} was removed from your watchlist.`
+        : `${indicator.name} was added to your watchlist.`,
+    });
+  };
 
   const triggerAddAnimation = () => {
     setJustAdded(true);
     window.dispatchEvent(new CustomEvent("cart-item-added"));
     setTimeout(() => setJustAdded(false), 1500);
-  };
-
-  const showMixToast = () => {
-    toast({
-      variant: "destructive",
-      title: "Can't mix Indicators and Strategies",
-      description: `Your cart already has ${cartVersion === "strategy" ? "Strategies" : "Indicators"}. Clear your cart or check out first.`,
-    });
-  };
-
-  const handleTrial = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const result = addTrial({
-      indicatorId: indicator.id,
-      name: indicator.name,
-      slug: indicator.slug,
-      price: indicator.price,
-    });
-    if (!result.ok) {
-      if (result.reason === "mixed") showMixToast();
-      return;
-    }
-    triggerAddAnimation();
-  };
-
-  const handleAdd = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const result = addItem({
-      indicatorId: indicator.id,
-      name: indicator.name,
-      slug: indicator.slug,
-      price: isFree ? "0" : indicator.price,
-    });
-    if (!result.ok) {
-      if (result.reason === "mixed") showMixToast();
-      return;
-    }
-    triggerAddAnimation();
   };
 
   return (
@@ -192,68 +194,59 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
             </div>
           </div>
 
-          {inCart && !justAdded ? (
-            <div className="mt-auto pt-2">
-              <div className="flex items-center gap-2 mb-2">
-                <Check className="h-3.5 w-3.5 text-primary shrink-0" />
-                <span className="text-xs font-medium text-primary" data-testid={`text-in-cart-${indicator.id}`}>
-                  {cartItem?.version === "strategy" ? "Strategy" : "Indicator"}
+          <div className="mt-auto pt-2">
+            {inCart && !justAdded && (
+              <div className="mb-2 flex items-center gap-2" data-testid={`text-in-cart-${indicator.id}`}>
+                <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <span className="text-xs font-medium text-primary">
+                  {cartItem?.version === "strategy" ? "Strategy" : cartItem?.version === "both" ? "Indicator + Strategy" : "Indicator"}
                   {cartItem?.isTrial ? " · Trial" : ""} — Added to Cart
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Link href="/cart" className="w-full">
-                  <Button variant="outline" size="sm" className="w-full" data-testid={`button-go-cart-${indicator.id}`}>
-                    <ShoppingCart className="mr-1.5 h-3.5 w-3.5" /> Go to Cart
-                  </Button>
-                </Link>
-                <Link href={`/indicator/${indicator.slug}`} className="w-full">
-                  <Button size="sm" className="w-full" data-testid={`button-view-${indicator.id}`}>
-                    View <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
-                  </Button>
-                </Link>
+            )}
+            {!inCart && blockedByMix && (
+              <p className="mb-2 text-[10.5px] leading-tight text-amber-600 dark:text-amber-400" data-testid={`text-mix-warn-${indicator.id}`}>
+                Cart has Strategies — open this indicator to switch versions.
+              </p>
+            )}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-xs" data-testid={`rating-${indicator.id}`}>
+                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                <span className="font-semibold tabular-nums">
+                  {indicator.rating ? Number(indicator.rating).toFixed(1) : "—"}
+                </span>
+                <span className="text-muted-foreground">
+                  ({indicator.reviewCount ?? 0})
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                {inCart ? (
+                  <Link href="/cart">
+                    <Button variant="ghost" size="sm" className="h-8 px-2 text-primary" data-testid={`button-go-cart-${indicator.id}`}>
+                      <ShoppingCart className="mr-1 h-3.5 w-3.5" /> Go to Cart
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link href={`/indicator/${indicator.slug}`}>
+                    <Button variant="ghost" size="sm" className="h-8 px-2 text-primary" data-testid={`button-view-${indicator.id}`}>
+                      View Details <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                    </Button>
+                  </Link>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-8 w-8 ${inWatchlist ? "text-primary" : "text-muted-foreground"}`}
+                  onClick={handleWatchlist}
+                  aria-pressed={inWatchlist}
+                  aria-label={inWatchlist ? "Remove from watchlist" : "Add to watchlist"}
+                  data-testid={`button-watchlist-${indicator.id}`}
+                >
+                  <Bookmark className={`h-4 w-4 ${inWatchlist ? "fill-primary" : ""}`} />
+                </Button>
               </div>
             </div>
-          ) : (
-            <div className="mt-auto pt-2">
-              {blockedByMix && (
-                <p className="mb-2 text-[10.5px] leading-tight text-amber-600 dark:text-amber-400" data-testid={`text-mix-warn-${indicator.id}`}>
-                  Cart has Strategies — open this indicator to switch versions.
-                </p>
-              )}
-              <div className="grid grid-cols-2 gap-2">
-                {!isFree && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={handleTrial}
-                    disabled={blockedByMix}
-                    data-testid={`button-trial-${indicator.id}`}
-                  >
-                    Get Trial
-                  </Button>
-                )}
-                {isFree && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={handleAdd}
-                    disabled={blockedByMix}
-                    data-testid={`button-get-free-${indicator.id}`}
-                  >
-                    Get Access
-                  </Button>
-                )}
-                <Link href={`/indicator/${indicator.slug}`} className="w-full">
-                  <Button size="sm" className="w-full" data-testid={`button-view-${indicator.id}`}>
-                    View <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </Card>
     </motion.div>
