@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "XJ3tHdnzZp8_OdaAjsVUH"
+uri = "file://docs/PROJECT_DOCUMENTATION.md"
+type = "text"
+title = "TradeVault — Complete Project Documentation"
