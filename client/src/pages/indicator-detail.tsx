@@ -8,7 +8,7 @@ import {
   Check, Lock, Star, ShieldCheck, Bookmark, Sparkles,
   Cpu, LineChart, AlertTriangle, MonitorSmartphone, BookOpen,
   Settings as SettingsIcon, MessageSquare, HelpCircle, Award,
-  Code2, Calendar, User as UserIcon,
+  Code2, Calendar, User as UserIcon, Play,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -491,22 +491,113 @@ export default function IndicatorDetail() {
               <div className="lg:col-span-8 space-y-6">
                 {/* OVERVIEW */}
                 <TabsContent value="overview" className="m-0 space-y-6">
-                  <div className="grid gap-6 md:grid-cols-2">
-                    <Card className="border-card-border p-6">
+                  <div className="grid gap-6 lg:grid-cols-12">
+                    {/* LEFT: About + Key Features */}
+                    <Card className="border-card-border p-6 lg:col-span-7">
                       <h2 className="mb-3 text-lg font-semibold" data-testid="text-about-title">About This Indicator</h2>
                       <TextBlock content={indicator.description} />
+                      <div className="mt-6">
+                        <h3 className="mb-3 text-base font-semibold" data-testid="text-features-title">Key Features</h3>
+                        <ul className="space-y-2 pl-1" data-testid="features-list">
+                          {indicator.features.map((f, i) => (
+                            <li key={i} className="flex items-start gap-2 text-sm" data-testid={`feature-${i}`}>
+                              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/70" />
+                              <span>{f}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </Card>
-                    <Card className="border-card-border p-6">
-                      <h2 className="mb-4 text-lg font-semibold" data-testid="text-features-title">Key Features</h2>
-                      <ul className="space-y-2.5" data-testid="features-list">
-                        {indicator.features.map((f, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm" data-testid={`feature-${i}`}>
-                            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                            <span>{f}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </Card>
+
+                    {/* RIGHT: Video Tutorial + Compatibility + Markets table */}
+                    <div className="space-y-6 lg:col-span-5">
+                      {(() => {
+                        const url = indicator.videoUrl || "";
+                        const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{6,})/);
+                        const hasVideo = Boolean(yt || url);
+                        return (
+                          <Card className="border-card-border overflow-hidden p-0" data-testid="card-video-tutorial">
+                            <div className="relative aspect-video bg-black">
+                              {yt ? (
+                                <iframe
+                                  className="absolute inset-0 h-full w-full"
+                                  src={`https://www.youtube.com/embed/${yt[1]}`}
+                                  title="Video Tutorial"
+                                  loading="lazy"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                  data-testid="iframe-video-tutorial"
+                                />
+                              ) : url ? (
+                                <video
+                                  controls
+                                  className="absolute inset-0 h-full w-full object-cover"
+                                  src={url}
+                                  data-testid="video-tutorial"
+                                />
+                              ) : (
+                                <>
+                                  <div className="absolute left-3 top-3 z-10">
+                                    <p className="text-[11px] font-semibold leading-none text-white">Video Tutorial</p>
+                                    <p className="mt-1 text-[10px] leading-none text-white/70">Learn how {indicator.name} works and how to use it.</p>
+                                  </div>
+                                  <div className="absolute inset-0 flex items-center justify-center text-center">
+                                    <div>
+                                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white/10 backdrop-blur">
+                                        <Play className="ml-0.5 h-6 w-6 text-white" fill="currentColor" />
+                                      </div>
+                                      <p className="mt-3 text-sm font-semibold text-white">Coming soon</p>
+                                    </div>
+                                  </div>
+                                </>
+                              )}
+                              {hasVideo && (
+                                <div className="pointer-events-none absolute left-3 top-3 rounded-md bg-black/60 px-2 py-1 backdrop-blur">
+                                  <p className="text-[11px] font-semibold leading-none text-white">Video Tutorial</p>
+                                  <p className="mt-1 text-[10px] leading-none text-white/70">Learn how {indicator.name} works and how to use it.</p>
+                                </div>
+                              )}
+                            </div>
+                          </Card>
+                        );
+                      })()}
+
+                      <Card className="border-card-border p-6" data-testid="card-overview-compatibility">
+                        <h2 className="mb-3 text-base font-semibold">Compatibility</h2>
+                        <div className="flex items-center justify-between border-b border-card-border pb-3 text-sm">
+                          <span className="text-muted-foreground">Platform</span>
+                          <span className="font-medium">TradingView</span>
+                        </div>
+
+                        <h3 className="mt-4 mb-2 text-sm font-semibold">Supported Markets &amp; Instruments</h3>
+                        {indicator.markets && indicator.markets.length > 0 ? (
+                          <div className="overflow-hidden rounded-lg border border-card-border" data-testid="table-markets">
+                            <table className="w-full text-sm">
+                              <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+                                <tr>
+                                  <th className="border-b border-card-border px-3 py-2 text-left font-medium">Script</th>
+                                  <th className="border-b border-card-border px-3 py-2 text-left font-medium">Time Frame</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {indicator.markets.map((m, i) => (
+                                  <tr key={i} className="border-b border-card-border last:border-b-0" data-testid={`row-market-${i}`}>
+                                    <td className="px-3 py-2 font-medium">{m}</td>
+                                    <td className="px-3 py-2 text-muted-foreground">
+                                      {indicator.bestTimeframes && indicator.bestTimeframes.length > 0
+                                        ? indicator.bestTimeframes.join(", ")
+                                        : "—"}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No supported markets specified.</p>
+                        )}
+                      </Card>
+                    </div>
                   </div>
 
                   {/* Live Signal Example + stats */}
