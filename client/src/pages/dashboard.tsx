@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth-provider";
@@ -5,7 +6,6 @@ import { getQueryFn } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Package,
@@ -17,8 +17,25 @@ import {
   ShieldCheck,
   Timer,
   TrendingUp,
+  Bookmark,
+  Star,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import type { Indicator } from "@shared/schema";
+
+const WATCHLIST_KEY = "tradevault.watchlist";
+type DashView = "active" | "pending" | "orders" | "saved";
+
+function readWatchlistIds(): number[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(WATCHLIST_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((n) => typeof n === "number") : [];
+  } catch {
+    return [];
+  }
+}
 
 interface DashboardOrderItem {
   id: number;
@@ -69,6 +86,24 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
+  const { data: allIndicators } = useQuery<Indicator[]>({
+    queryKey: ["/api/indicators"],
+    enabled: !!user,
+  });
+
+  const [view, setView] = useState<DashView>("active");
+  const [watchlistIds, setWatchlistIds] = useState<number[]>(() => readWatchlistIds());
+
+  useEffect(() => {
+    const sync = () => setWatchlistIds(readWatchlistIds());
+    window.addEventListener("storage", sync);
+    window.addEventListener("watchlist-updated", sync);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("watchlist-updated", sync);
+    };
+  }, []);
+
   if (authLoading) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
@@ -110,6 +145,14 @@ export default function Dashboard() {
   const activeIndicators = allItems.filter((i) => i.accessStatus === "active");
   const pendingItems = allItems.filter((i) => i.accessStatus === "pending");
   const totalOrders = orders?.length || 0;
+  const savedIndicators = (allIndicators || []).filter((ind) => watchlistIds.includes(ind.id));
+
+  const stats: { key: DashView; label: string; count: number; Icon: typeof TrendingUp; iconWrap: string; iconColor: string; testId: string }[] = [
+    { key: "active", label: "Active Indicators", count: activeIndicators.length, Icon: TrendingUp, iconWrap: "bg-emerald-500/10", iconColor: "text-emerald-600 dark:text-emerald-400", testId: "stat-active-indicators" },
+    { key: "pending", label: "Pending Requests", count: pendingItems.length, Icon: Timer, iconWrap: "bg-amber-500/10", iconColor: "text-amber-600 dark:text-amber-400", testId: "stat-pending-requests" },
+    { key: "orders", label: "Total Orders", count: totalOrders, Icon: Package, iconWrap: "bg-primary/10", iconColor: "text-primary", testId: "stat-total-orders" },
+    { key: "saved", label: "Saved Indicators", count: savedIndicators.length, Icon: Bookmark, iconWrap: "bg-blue-500/10", iconColor: "text-blue-600 dark:text-blue-400", testId: "stat-saved-indicators" },
+  ];
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
@@ -123,47 +166,51 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3 mb-8">
-          <Card className="border-card-border p-5" data-testid="stat-active-indicators">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-emerald-500/10">
-                <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{activeIndicators.length}</p>
-                <p className="text-sm text-muted-foreground">Active Indicators</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border-card-border p-5" data-testid="stat-pending-requests">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-amber-500/10">
-                <Timer className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{pendingItems.length}</p>
-                <p className="text-sm text-muted-foreground">Pending Requests</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border-card-border p-5" data-testid="stat-total-orders">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                <Package className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{totalOrders}</p>
-                <p className="text-sm text-muted-foreground">Total Orders</p>
-              </div>
-            </div>
-          </Card>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+          {stats.map((s) => {
+            const active = view === s.key;
+            return (
+              <button
+                key={s.key}
+                type="button"
+                onClick={() => setView(s.key)}
+                aria-pressed={active}
+                className={`text-left rounded-lg border p-5 transition-all hover-elevate ${
+                  active ? "border-primary/60 bg-primary/[0.04] ring-1 ring-primary/40" : "border-card-border bg-card"
+                }`}
+                data-testid={s.testId}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md ${s.iconWrap}`}>
+                    <s.Icon className={`h-5 w-5 ${s.iconColor}`} />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{s.count}</p>
+                    <p className="text-sm text-muted-foreground">{s.label}</p>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
 
-        {activeIndicators.length > 0 && (
+        {view === "active" && (
           <section className="mb-8">
             <h2 className="text-lg font-semibold mb-4" data-testid="text-active-heading">Active Indicators</h2>
+            {activeIndicators.length === 0 ? (
+              <Card className="border-card-border p-8 text-center" data-testid="empty-active">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                  <TrendingUp className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="mt-4 text-base font-medium">No active indicators yet</h3>
+                <p className="mt-1 text-sm text-muted-foreground">Once your order is approved, your indicators will appear here.</p>
+                <Link href="/indicators">
+                  <Button className="mt-4" size="sm" data-testid="button-active-browse">
+                    Browse Indicators <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </Card>
+            ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               {activeIndicators.map((item) => {
                 const badge = getAccessBadge(item.accessStatus);
@@ -198,12 +245,22 @@ export default function Dashboard() {
                 );
               })}
             </div>
+            )}
           </section>
         )}
 
-        {pendingItems.length > 0 && (
+        {view === "pending" && (
           <section className="mb-8">
             <h2 className="text-lg font-semibold mb-4" data-testid="text-pending-heading">Pending Access Requests</h2>
+            {pendingItems.length === 0 ? (
+              <Card className="border-card-border p-8 text-center" data-testid="empty-pending">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                  <Timer className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="mt-4 text-base font-medium">No pending requests</h3>
+                <p className="mt-1 text-sm text-muted-foreground">All your access requests have been processed.</p>
+              </Card>
+            ) : (
             <div className="space-y-3">
               {pendingItems.map((item) => (
                 <Card key={`pending-${item.id}`} className="border-card-border p-4" data-testid={`pending-item-${item.id}`}>
@@ -228,9 +285,65 @@ export default function Dashboard() {
                 </Card>
               ))}
             </div>
+            )}
           </section>
         )}
 
+        {view === "saved" && (
+          <section className="mb-8">
+            <h2 className="text-lg font-semibold mb-4" data-testid="text-saved-heading">Saved Indicators</h2>
+            {savedIndicators.length === 0 ? (
+              <Card className="border-card-border p-8 text-center" data-testid="empty-saved">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                  <Bookmark className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="mt-4 text-base font-medium">No saved indicators yet</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Tap the bookmark on any indicator card to save it for later.
+                </p>
+                <Link href="/indicators">
+                  <Button className="mt-4" size="sm" data-testid="button-saved-browse">
+                    Browse Indicators <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </Card>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {savedIndicators.map((ind) => (
+                  <Card key={`saved-${ind.id}`} className="border-card-border p-4" data-testid={`saved-indicator-${ind.id}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <Link href={`/indicator/${ind.slug}`} className="font-medium hover:underline truncate" data-testid={`link-saved-${ind.id}`}>
+                            {ind.name}
+                          </Link>
+                          <Badge variant="outline" className={`shrink-0 text-[10px] capitalize ${ind.tier === "free" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"}`}>
+                            {ind.tier}
+                          </Badge>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{ind.description}</p>
+                        <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Star className="h-3 w-3 fill-amber-400 text-amber-400" /> {ind.rating}
+                          </span>
+                          <span>·</span>
+                          <span>{ind.category}</span>
+                        </div>
+                      </div>
+                      <Link href={`/indicator/${ind.slug}`}>
+                        <Button variant="outline" size="sm" data-testid={`button-saved-view-${ind.id}`}>
+                          View <ArrowRight className="ml-1 h-3 w-3" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {view === "orders" && (
         <section>
           <h2 className="text-lg font-semibold mb-4" data-testid="text-orders-heading">Order History</h2>
 
@@ -339,6 +452,7 @@ export default function Dashboard() {
             </div>
           )}
         </section>
+        )}
       </motion.div>
     </div>
   );
