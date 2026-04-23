@@ -404,7 +404,7 @@ export default function IndicatorDetail() {
           {/* TABS */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-10">
             <div className="border-b border-card-border">
-              <TabsList className="h-auto bg-transparent p-0 gap-1 flex-wrap justify-start">
+              <TabsList className="h-auto bg-transparent p-0 gap-1 justify-start overflow-x-auto whitespace-nowrap flex-nowrap sm:flex-wrap sm:overflow-visible">
                 {[
                   { v: "overview", label: "Overview", icon: BookOpen },
                   { v: "how", label: "How It Works", icon: Brain },
