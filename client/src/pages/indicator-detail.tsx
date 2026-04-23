@@ -45,6 +45,18 @@ const categoryColors: Record<string, string> = {
   "Support/Resistance": "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
 };
 
+const DURATION_DISCOUNTS: Record<number, number> = {
+  1: 0.03,
+  3: 0.06,
+  6: 0.09,
+  9: 0.12,
+  12: 0.24,
+};
+
+function getDurationDiscount(months: number): number {
+  return DURATION_DISCOUNTS[months] ?? 0;
+}
+
 function parsePct(s?: string | null): number {
   if (!s) return 0;
   const n = parseFloat(s.replace(/[^\d.\-]/g, ""));
@@ -854,21 +866,46 @@ export default function IndicatorDetail() {
                   onValueChange={(v) => setDialogMonths(v[0] ?? 1)}
                   data-testid="slider-dialog-months"
                 />
-                <div className="mt-3 grid grid-cols-6 gap-1.5">
-                  {[1, 3, 6, 9, 12].map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setDialogMonths(m)}
-                      className={`col-span-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors hover-elevate ${
-                        dialogMonths === m ? "border-primary/60 bg-primary/[0.06] text-foreground" : "border-card-border text-muted-foreground"
-                      }`}
-                      data-testid={`button-dialog-months-${m}`}
-                    >
-                      {m}m
-                    </button>
-                  ))}
-                  <span className="col-span-1 text-right text-[10px] text-muted-foreground self-center">1–12</span>
+                <div className="mt-3 grid grid-cols-5 gap-1.5">
+                  {[1, 3, 6, 9, 12].map((m) => {
+                    const monthly = parseFloat(computeVersionPrice(dialogVersion, indicatorVersionPrice));
+                    const original = monthly * m;
+                    const discount = getDurationDiscount(m);
+                    const discounted = Math.round(original * (1 - discount));
+                    const active = dialogMonths === m;
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => setDialogMonths(m)}
+                        className={`relative flex flex-col items-center justify-center rounded-md border px-1.5 py-2 transition-colors hover-elevate ${
+                          active ? "border-primary/60 bg-primary/[0.06] text-foreground" : "border-card-border text-muted-foreground"
+                        }`}
+                        data-testid={`button-dialog-months-${m}`}
+                      >
+                        {discount > 0 && (
+                          <span className="absolute -top-1.5 right-0.5 rounded-sm bg-emerald-500/90 px-1 py-px text-[8px] font-bold leading-none text-white">
+                            -{Math.round(discount * 100)}%
+                          </span>
+                        )}
+                        <span className="text-[11px] font-semibold leading-none">{m}M</span>
+                        {original > 0 ? (
+                          <>
+                            {discount > 0 && (
+                              <span className="mt-1 text-[9px] leading-none text-muted-foreground line-through tabular-nums">
+                                ₹{original.toLocaleString("en-IN")}
+                              </span>
+                            )}
+                            <span className={`mt-0.5 text-[10px] font-bold leading-none tabular-nums ${active ? "text-primary" : "text-foreground"}`}>
+                              ₹{discounted.toLocaleString("en-IN")}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="mt-1 text-[10px] font-bold leading-none text-emerald-500">Free</span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -887,13 +924,28 @@ export default function IndicatorDetail() {
                 <div className="text-right">
                   {(() => {
                     const monthly = parseFloat(computeVersionPrice(dialogVersion, indicatorVersionPrice));
+                    const original = monthly * dialogMonths;
+                    const discount = getDurationDiscount(dialogMonths);
                     const total = dialogIsTrial
                       ? parseFloat(computeTrialPrice(dialogVersion))
-                      : monthly * dialogMonths;
+                      : Math.round(original * (1 - discount));
+                    const savings = !dialogIsTrial && discount > 0 ? original - total : 0;
                     return (
-                      <p className="text-2xl font-bold tracking-tight" data-testid="text-dialog-total">
-                        {total === 0 ? "Free" : `₹${Number(total).toLocaleString("en-IN")}`}
-                      </p>
+                      <>
+                        {savings > 0 && (
+                          <p className="text-[11px] leading-none text-muted-foreground line-through tabular-nums" data-testid="text-dialog-original">
+                            ₹{Number(original).toLocaleString("en-IN")}
+                          </p>
+                        )}
+                        <p className="mt-0.5 text-2xl font-bold tracking-tight" data-testid="text-dialog-total">
+                          {total === 0 ? "Free" : `₹${Number(total).toLocaleString("en-IN")}`}
+                        </p>
+                        {savings > 0 && (
+                          <p className="mt-0.5 text-[10px] font-semibold text-emerald-500 tabular-nums" data-testid="text-dialog-savings">
+                            Save ₹{Number(savings).toLocaleString("en-IN")} ({Math.round(discount * 100)}% off)
+                          </p>
+                        )}
+                      </>
                     );
                   })()}
                 </div>
@@ -936,10 +988,31 @@ export default function IndicatorDetail() {
 
             <Separator className="my-4" />
 
-            <div className="flex items-start gap-2 text-xs text-muted-foreground">
-              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-              <span><span className="font-medium text-foreground">7-Day Money Back Guarantee.</span> Not for you? Get a full refund — no questions asked.</span>
-            </div>
+            {(() => {
+              const trialPrice = parseFloat(computeTrialPrice(dialogVersion));
+              const trialDays = indicator.trialDays || 15;
+              return (
+                <button
+                  type="button"
+                  onClick={() => setDialogIsTrial(true)}
+                  className="flex w-full items-center justify-between gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 text-left transition-colors hover-elevate"
+                  data-testid="banner-trial-offer"
+                >
+                  <div className="flex items-start gap-2">
+                    <Clock className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                    <div>
+                      <p className="text-xs font-semibold text-foreground">{trialDays} Days Trial</p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        Try {VERSION_LABELS[dialogVersion]} risk-free before you subscribe.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="shrink-0 text-sm font-bold tracking-tight text-emerald-600 dark:text-emerald-400 tabular-nums" data-testid="text-trial-price">
+                    {trialPrice === 0 ? "Free" : `₹${Number(trialPrice).toLocaleString("en-IN")}`}
+                  </span>
+                </button>
+              );
+            })()}
           </div>
         </DialogContent>
       </Dialog>
