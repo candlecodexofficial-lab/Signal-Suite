@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { ArrowRight, Crown, Code2, CalendarDays, Check, ShoppingCart, Star, Bookmark } from "lucide-react";
+import { ArrowRight, Check, ShoppingCart, Star, Bookmark, Flame, Sparkles, TrendingUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/components/cart-provider";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -67,6 +66,34 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
     setTimeout(() => setJustAdded(false), 1500);
   };
 
+  const ratingNum = indicator.rating ? Number(indicator.rating) : 0;
+  const reviewNum = indicator.reviewCount ?? 0;
+  let cornerBadge:
+    | { label: string; cls: string; Icon: typeof Flame }
+    | null = null;
+  if (ratingNum >= 4.8) cornerBadge = { label: "Trending", cls: "bg-blue-600", Icon: TrendingUp };
+  else if (reviewNum >= 80) cornerBadge = { label: "Popular", cls: "bg-emerald-600", Icon: Flame };
+  else if (indicator.id % 5 === 0) cornerBadge = { label: "New", cls: "bg-orange-500", Icon: Sparkles };
+
+  const tfHint = (() => {
+    const tfs = indicator.bestTimeframes ?? [];
+    if (tfs.some((t) => /1 ?min|5 ?min|15 ?min/i.test(t))) return "Scalping";
+    if (tfs.some((t) => /30 ?min|1 ?hour|2 ?hour/i.test(t))) return "Intraday";
+    return "Swing";
+  })();
+  const marketHints = (() => {
+    const ms = indicator.markets ?? [];
+    const out: string[] = [];
+    if (ms.some((m) => /nifty|bank ?nifty/i.test(m))) out.push("NIFTY");
+    if (ms.some((m) => /usd|jpy|gbp|forex|eur/i.test(m))) out.push("Forex");
+    if (ms.some((m) => /btc|eth|sol|bitcoin|crypto/i.test(m))) out.push("Crypto");
+    if (ms.some((m) => /tesla|apple|s&p|nasdaq|dow|nas100|stocks/i.test(m))) out.push("Stocks");
+    if (ms.some((m) => /gold|crude|oil|commodit/i.test(m))) out.push("Commodities");
+    return out;
+  })();
+  const tagPills = [tfHint, ...marketHints].slice(0, 4);
+  const CornerIcon = cornerBadge?.Icon;
+
   return (
     <motion.div
       animate={justAdded ? { scale: [1, 1.03, 0.98, 1] } : {}}
@@ -109,35 +136,13 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
           )}
         </AnimatePresence>
 
-        <div className="flex flex-1 flex-col gap-4 p-5">
-          <div className="flex items-start justify-between gap-2">
-            {isFree ? (
-              <Badge variant="secondary" className="text-xs bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" data-testid={`badge-tier-${indicator.id}`}>
-                Free
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="text-xs bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20" data-testid={`badge-tier-${indicator.id}`}>
-                <Crown className="mr-1 h-3 w-3" /> Premium
-              </Badge>
-            )}
-            <div data-testid={`text-price-${indicator.id}`}>
-              {isFree ? (
-                <span className="text-sm font-bold text-emerald-500 dark:text-emerald-400">Free</span>
-              ) : (
-                <>
-                  <span className="text-sm font-bold">₹{Number(indicator.price).toLocaleString("en-IN")}</span>
-                  <span className="text-xs text-muted-foreground">/mo</span>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="relative overflow-hidden rounded-md">
+        <div className="flex flex-1 flex-col p-0">
+          <div className="relative h-40 overflow-hidden rounded-t-lg border-b border-card-border bg-gradient-to-br from-muted/40 to-muted/10 dark:from-slate-900/60 dark:to-slate-900/20">
             <svg
               aria-hidden="true"
-              viewBox="0 0 320 120"
+              viewBox="0 0 320 160"
               preserveAspectRatio="none"
-              className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.18] dark:opacity-25"
+              className="absolute inset-0 h-full w-full"
             >
               <defs>
                 <linearGradient id={`chart-fill-${indicator.id}`} x1="0" y1="0" x2="0" y2="1">
@@ -148,53 +153,89 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
                   <path d="M32 0 L0 0 0 24" fill="none" stroke="currentColor" strokeWidth="0.4" opacity="0.35" />
                 </pattern>
               </defs>
-              <rect width="320" height="120" fill={`url(#chart-grid-${indicator.id})`} className="text-muted-foreground" />
+              <rect width="320" height="160" fill={`url(#chart-grid-${indicator.id})`} className="text-muted-foreground/40" />
+              {Array.from({ length: 28 }).map((_, i) => {
+                const x = 8 + i * 11;
+                const seed = (indicator.id * 13 + i * 7) % 100;
+                const up = seed % 2 === 0;
+                const mid = 80 + ((seed * 0.5) - 25);
+                const half = 6 + (seed % 14);
+                const bodyH = 4 + (seed % 16);
+                const top = mid - half;
+                const bottom = mid + half;
+                const bodyTop = up ? mid - bodyH / 2 : mid - bodyH / 2;
+                const color = up ? "hsl(142 71% 45%)" : "hsl(0 72% 55%)";
+                return (
+                  <g key={i}>
+                    <line x1={x} y1={top} x2={x} y2={bottom} stroke={color} strokeWidth="0.8" />
+                    <rect x={x - 3} y={bodyTop} width="6" height={bodyH} fill={color} opacity="0.85" />
+                  </g>
+                );
+              })}
               <path
-                d="M0,90 L24,82 L48,88 L72,70 L96,75 L120,55 L144,62 L168,42 L192,48 L216,30 L240,38 L264,22 L288,28 L312,15 L320,18 L320,120 L0,120 Z"
+                d={`M0,${100 + (indicator.id % 10)} Q40,${70 + (indicator.id % 15)} 80,${85 - (indicator.id % 12)} T160,${60 + (indicator.id % 20)} T240,${75 - (indicator.id % 18)} T320,${55 + (indicator.id % 14)} L320,160 L0,160 Z`}
                 fill={`url(#chart-fill-${indicator.id})`}
+                opacity="0.6"
               />
               <path
-                d="M0,90 L24,82 L48,88 L72,70 L96,75 L120,55 L144,62 L168,42 L192,48 L216,30 L240,38 L264,22 L288,28 L312,15 L320,18"
+                d={`M0,${100 + (indicator.id % 10)} Q40,${70 + (indicator.id % 15)} 80,${85 - (indicator.id % 12)} T160,${60 + (indicator.id % 20)} T240,${75 - (indicator.id % 18)} T320,${55 + (indicator.id % 14)}`}
                 fill="none"
                 stroke="hsl(var(--primary))"
-                strokeWidth="1.4"
+                strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
-              <g className="text-emerald-500">
-                <circle cx="120" cy="55" r="2" fill="currentColor" />
-                <circle cx="216" cy="30" r="2" fill="currentColor" />
-                <circle cx="288" cy="28" r="2" fill="currentColor" />
-              </g>
             </svg>
-            <div className="relative z-[1] py-2">
-              <h3 className="text-lg font-semibold tracking-tight" data-testid={`text-indicator-name-${indicator.id}`}>
+            {cornerBadge && CornerIcon && (
+              <div
+                className={`absolute right-0 top-3 rounded-l-md px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white shadow-md ${cornerBadge.cls}`}
+                data-testid={`badge-corner-${indicator.id}`}
+              >
+                <span className="inline-flex items-center gap-1">
+                  <CornerIcon className="h-3 w-3" />
+                  {cornerBadge.label}
+                </span>
+              </div>
+            )}
+            {isFree && (
+              <div className="absolute left-3 top-3 rounded-md bg-emerald-500/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white shadow-sm">
+                Free
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-1 flex-col gap-3 p-4">
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="text-base font-semibold leading-tight tracking-tight" data-testid={`text-indicator-name-${indicator.id}`}>
                 {indicator.name}
               </h3>
-              <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-                {indicator.shortDescription}
-              </p>
+              <Badge
+                variant="secondary"
+                className="shrink-0 border-primary/20 bg-primary/10 text-[10px] font-medium uppercase tracking-wide text-primary"
+                data-testid={`badge-category-${indicator.id}`}
+              >
+                {indicator.category}
+              </Badge>
             </div>
-          </div>
 
-          <Separator />
+            <p className="line-clamp-2 text-xs text-muted-foreground leading-relaxed">
+              {indicator.shortDescription}
+            </p>
 
-          <div className="grid grid-cols-3 gap-2 text-center text-[11px] text-muted-foreground">
-            <div data-testid={`text-version-${indicator.id}`}>
-              <Code2 className="mx-auto mb-0.5 h-3 w-3 opacity-60" />
-              <span className="font-medium text-foreground/80">v1.1 Beta</span>
-            </div>
-            <div data-testid={`text-updated-${indicator.id}`}>
-              <CalendarDays className="mx-auto mb-0.5 h-3 w-3 opacity-60" />
-              <span className="font-medium text-foreground/80">Mar 2026</span>
-            </div>
-            <div data-testid={`text-developer-${indicator.id}`}>
-              <span className="block mb-0.5 text-[10px] uppercase tracking-wider opacity-60">By</span>
-              <span className="font-medium text-foreground/80">Candle Codex</span>
-            </div>
-          </div>
+            {tagPills.length > 0 && (
+              <div className="flex flex-wrap gap-1.5" data-testid={`tags-${indicator.id}`}>
+                {tagPills.map((t) => (
+                  <span
+                    key={t}
+                    className="rounded-md bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            )}
 
-          <div className="mt-auto pt-2">
+            <div className="mt-auto pt-1">
             {inCart && !justAdded && (
               <div className="mb-2 flex items-center gap-2" data-testid={`text-in-cart-${indicator.id}`}>
                 <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
@@ -246,6 +287,7 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
                 </Button>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </Card>
