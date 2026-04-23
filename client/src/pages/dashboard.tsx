@@ -19,9 +19,17 @@ import {
   TrendingUp,
   Bookmark,
   Star,
+  MessageCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import type { Indicator } from "@shared/schema";
+
+const SUPPORT_WHATSAPP_NUMBER = "918920167711";
+const PENDING_SUPPORT_THRESHOLD_MS = 24 * 60 * 60 * 1000;
+
+function buildWhatsAppUrl(message: string): string {
+  return `https://wa.me/${SUPPORT_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+}
 
 const WATCHLIST_KEY = "tradevault.watchlist";
 type DashView = "active" | "pending" | "orders" | "saved";
@@ -141,7 +149,7 @@ export default function Dashboard() {
     );
   }
 
-  const allItems = orders?.flatMap((o) => o.items.map((item) => ({ ...item, orderStatus: o.status, orderId: o.id }))) || [];
+  const allItems = orders?.flatMap((o) => o.items.map((item) => ({ ...item, orderStatus: o.status, orderId: o.id, orderCreatedAt: o.createdAt }))) || [];
   const activeIndicators = allItems.filter((i) => i.accessStatus === "active");
   const pendingItems = allItems.filter((i) => i.accessStatus === "pending");
   const totalOrders = orders?.length || 0;
@@ -262,7 +270,10 @@ export default function Dashboard() {
               </Card>
             ) : (
             <div className="space-y-3">
-              {pendingItems.map((item) => (
+              {pendingItems.map((item) => {
+                const ageMs = Date.now() - new Date(item.orderCreatedAt).getTime();
+                const isStale = ageMs > PENDING_SUPPORT_THRESHOLD_MS;
+                return (
                 <Card key={`pending-${item.id}`} className="border-card-border p-4" data-testid={`pending-item-${item.id}`}>
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
@@ -282,8 +293,26 @@ export default function Dashboard() {
                       <Clock className="mr-1 h-3 w-3" /> Awaiting Approval
                     </Badge>
                   </div>
+                  {isStale && (
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2.5">
+                      <p className="text-[11.5px] leading-snug text-amber-700 dark:text-amber-300">
+                        This request has been pending for over 24 hours. Reach out and we'll prioritize it.
+                      </p>
+                      <a
+                        href={buildWhatsAppUrl(`Hi TradeVault team, my order #${item.orderId} for "${item.indicatorName}" has been pending for over 24 hours. Please help.`)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        data-testid={`button-pending-support-${item.id}`}
+                      >
+                        <Button size="sm" variant="outline" className="h-7 gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:text-emerald-700 dark:text-emerald-300 dark:hover:text-emerald-300">
+                          <MessageCircle className="h-3.5 w-3.5" /> Contact Support Team
+                        </Button>
+                      </a>
+                    </div>
+                  )}
                 </Card>
-              ))}
+                );
+              })}
             </div>
             )}
           </section>
@@ -398,14 +427,53 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    {order.status === "rejected" && order.rejectionReason && (
+                    {order.status === "rejected" && (
                       <div className="border-b bg-red-500/5 px-5 py-3" data-testid={`rejection-reason-${order.id}`}>
-                        <div className="flex items-start gap-2">
-                          <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold text-red-600 dark:text-red-400">Reason for rejection</p>
-                            <p className="mt-0.5 text-sm text-foreground">{order.rejectionReason}</p>
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="flex items-start gap-2 min-w-0">
+                            <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-red-600 dark:text-red-400">
+                                {order.rejectionReason ? "Reason for rejection" : "Order rejected"}
+                              </p>
+                              {order.rejectionReason && (
+                                <p className="mt-0.5 text-sm text-foreground">{order.rejectionReason}</p>
+                              )}
+                            </div>
                           </div>
+                          <a
+                            href={buildWhatsAppUrl(`Hi TradeVault team, my order #${order.id} was rejected. Could you help me understand why and how to proceed?`)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            data-testid={`button-rejected-support-${order.id}`}
+                          >
+                            <Button size="sm" variant="outline" className="h-7 gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:text-emerald-700 dark:text-emerald-300 dark:hover:text-emerald-300">
+                              <MessageCircle className="h-3.5 w-3.5" /> Contact Support Team
+                            </Button>
+                          </a>
+                        </div>
+                      </div>
+                    )}
+
+                    {order.status === "pending" && Date.now() - new Date(order.createdAt).getTime() > PENDING_SUPPORT_THRESHOLD_MS && (
+                      <div className="border-b bg-amber-500/5 px-5 py-3" data-testid={`pending-stale-${order.id}`}>
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex items-start gap-2">
+                            <Clock className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                            <p className="text-xs text-amber-700 dark:text-amber-300">
+                              Pending for over 24 hours. Reach out and we'll prioritize it.
+                            </p>
+                          </div>
+                          <a
+                            href={buildWhatsAppUrl(`Hi TradeVault team, my order #${order.id} has been pending for over 24 hours. Please help.`)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            data-testid={`button-order-pending-support-${order.id}`}
+                          >
+                            <Button size="sm" variant="outline" className="h-7 gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:text-emerald-700 dark:text-emerald-300 dark:hover:text-emerald-300">
+                              <MessageCircle className="h-3.5 w-3.5" /> Contact Support Team
+                            </Button>
+                          </a>
                         </div>
                       </div>
                     )}
