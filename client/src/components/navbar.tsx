@@ -38,6 +38,8 @@ export function Navbar() {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/indicators", label: "Indicators & Strategies" },
+    { href: "/support", label: "Help & Support" },
+    { href: "/about", label: "About" },
   ];
 
   const initials = user

@@ -15,6 +15,8 @@ import CartPage from "@/pages/cart";
 import Checkout from "@/pages/checkout";
 import Dashboard from "@/pages/dashboard";
 import AdminPage from "@/pages/admin";
+import SupportPage from "@/pages/support";
+import AboutPage from "@/pages/about";
 
 function Router() {
   return (
@@ -26,6 +28,8 @@ function Router() {
       <Route path="/checkout" component={Checkout} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/admin" component={AdminPage} />
+      <Route path="/support" component={SupportPage} />
+      <Route path="/about" component={AboutPage} />
       <Route component={NotFound} />
     </Switch>
   );
