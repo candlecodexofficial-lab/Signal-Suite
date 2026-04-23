@@ -36,6 +36,9 @@ export const indicators = pgTable("indicators", {
   tradingViewSymbol: text("trading_view_symbol"),
   rating: text("rating"),
   reviewCount: integer("review_count").default(0),
+  versionLabel: text("version_label"),
+  publishedDate: text("published_date"),
+  developer: text("developer"),
 });
 
 export const users = pgTable("users", {

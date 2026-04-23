@@ -8,6 +8,7 @@ import {
   Check, Lock, Star, ShieldCheck, Bookmark, Sparkles,
   Cpu, LineChart, AlertTriangle, MonitorSmartphone, BookOpen,
   Settings as SettingsIcon, MessageSquare, HelpCircle, Award,
+  Code2, Calendar, User as UserIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -309,6 +310,30 @@ export default function IndicatorDetail() {
               <p className="mt-3 text-base text-muted-foreground leading-relaxed sm:text-lg" data-testid="text-short-desc">
                 {indicator.shortDescription}
               </p>
+
+              {/* Meta row: version / published / developer */}
+              {(indicator.versionLabel || indicator.publishedDate || indicator.developer) && (
+                <div className="mt-5 grid grid-cols-3 gap-4 rounded-lg border border-card-border bg-card/40 px-4 py-3" data-testid="meta-row">
+                  {indicator.versionLabel && (
+                    <div className="flex flex-col items-center gap-1 text-center" data-testid="meta-version">
+                      <Code2 className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground">{indicator.versionLabel}</span>
+                    </div>
+                  )}
+                  {indicator.publishedDate && (
+                    <div className="flex flex-col items-center gap-1 text-center" data-testid="meta-published">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground">{indicator.publishedDate}</span>
+                    </div>
+                  )}
+                  {indicator.developer && (
+                    <div className="flex flex-col items-center gap-1 text-center" data-testid="meta-developer">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">By</span>
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground">{indicator.developer}</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Tags */}
               {indicator.tags && indicator.tags.length > 0 && (

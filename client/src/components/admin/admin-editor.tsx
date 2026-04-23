@@ -59,6 +59,9 @@ const EMPTY: FormState = {
   tradingViewSymbol: "",
   rating: "",
   reviewCount: 0,
+  versionLabel: "",
+  publishedDate: "",
+  developer: "",
 };
 
 function slugify(s: string) {
@@ -311,6 +314,9 @@ function IndicatorFormDialog({
       tradingViewSymbol: initial.tradingViewSymbol || "",
       rating: initial.rating || "",
       reviewCount: initial.reviewCount ?? 0,
+      versionLabel: initial.versionLabel || "",
+      publishedDate: initial.publishedDate || "",
+      developer: initial.developer || "",
     };
   };
 
@@ -365,6 +371,9 @@ function IndicatorFormDialog({
         tradingViewSymbol: form.tradingViewSymbol || null,
         rating: form.rating || null,
         reviewCount: typeof form.reviewCount === "number" ? form.reviewCount : parseInt(String(form.reviewCount || 0)) || 0,
+        versionLabel: form.versionLabel || null,
+        publishedDate: form.publishedDate || null,
+        developer: form.developer || null,
         nonRepainting: !!form.nonRepainting,
         faqs: faqsText
           .split(/\n---\n/)
@@ -551,6 +560,24 @@ function IndicatorFormDialog({
                   <Input value={form.tradingViewSymbol || ""}
                     onChange={(e) => update("tradingViewSymbol", e.target.value)}
                     placeholder="NSE:NIFTY" data-testid="input-tv-symbol"
+                  />
+                </Field>
+                <Field label="Version Label" hint="e.g. v1.1 Beta">
+                  <Input value={form.versionLabel || ""}
+                    onChange={(e) => update("versionLabel", e.target.value)}
+                    placeholder="v1.1 Beta" data-testid="input-version-label"
+                  />
+                </Field>
+                <Field label="Published Date" hint="e.g. Mar 2026">
+                  <Input value={form.publishedDate || ""}
+                    onChange={(e) => update("publishedDate", e.target.value)}
+                    placeholder="Mar 2026" data-testid="input-published-date"
+                  />
+                </Field>
+                <Field label="Developer" hint="e.g. Candle Codex">
+                  <Input value={form.developer || ""}
+                    onChange={(e) => update("developer", e.target.value)}
+                    placeholder="Candle Codex" data-testid="input-developer"
                   />
                 </Field>
               </div>
