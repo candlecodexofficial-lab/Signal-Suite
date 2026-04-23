@@ -32,6 +32,7 @@ const MARKET_OPTIONS: { key: MarketKey; label: string; match: RegExp }[] = [
 ];
 
 export default function IndicatorsPage() {
+  const [activeTier, setActiveTier] = useState<"All" | "Free" | "Premium">("All");
   const [activeCategory, setActiveCategory] = useState<"All" | CategoryKey>("All");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("newest");
@@ -50,6 +51,7 @@ export default function IndicatorsPage() {
 
   const filtered = useMemo(() => {
     let list = indicators ?? [];
+    if (activeTier !== "All") list = list.filter((i) => i.tier.toLowerCase() === activeTier.toLowerCase());
     if (activeCategory !== "All") list = list.filter((i) => matchesCategory(i, activeCategory));
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -76,7 +78,7 @@ export default function IndicatorsPage() {
     else if (sortBy === "price-high") sorted.sort((a, b) => Number(b.price) - Number(a.price));
     else sorted.sort((a, b) => b.id - a.id);
     return sorted;
-  }, [indicators, activeCategory, search, marketFilters, sortBy]);
+  }, [indicators, activeTier, activeCategory, search, marketFilters, sortBy]);
 
   const toggleMarket = (key: MarketKey) => {
     const next = new Set(marketFilters);
@@ -84,6 +86,7 @@ export default function IndicatorsPage() {
     setMarketFilters(next);
   };
   const resetFilters = () => {
+    setActiveTier("All");
     setActiveCategory("All");
     setSearch("");
     setMarketFilters(new Set());
@@ -126,15 +129,15 @@ export default function IndicatorsPage() {
         </div>
 
         <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap gap-2" data-testid="category-tabs">
-            {(["All", ...CATEGORY_OPTIONS.map((c) => c.key)] as ("All" | CategoryKey)[]).map((name) => (
+          <div className="flex flex-wrap gap-2" data-testid="tier-tabs">
+            {(["All", "Free", "Premium"] as const).map((name) => (
               <Button
                 key={name}
                 size="sm"
-                variant={activeCategory === name ? "default" : "outline"}
-                onClick={() => setActiveCategory(name)}
+                variant={activeTier === name ? "default" : "outline"}
+                onClick={() => setActiveTier(name)}
                 className="rounded-full"
-                data-testid={`tab-cat-${name.toLowerCase()}`}
+                data-testid={`tab-tier-${name.toLowerCase()}`}
               >
                 {name}
               </Button>
