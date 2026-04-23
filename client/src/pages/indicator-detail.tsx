@@ -488,7 +488,7 @@ export default function IndicatorDetail() {
 
             {/* 3-COLUMN LAYOUT */}
             <div className="mt-8 grid gap-6 lg:grid-cols-12">
-              <div className="lg:col-span-8 space-y-6">
+              <div className="lg:col-span-12 space-y-6">
                 {/* OVERVIEW */}
                 <TabsContent value="overview" className="m-0 space-y-6">
                   <div className="grid gap-6 lg:grid-cols-12">
@@ -806,63 +806,6 @@ export default function IndicatorDetail() {
                 </TabsContent>
               </div>
 
-              {/* RIGHT SIDEBAR */}
-              <aside className="lg:col-span-4 space-y-4">
-                <div className="lg:sticky lg:top-20 space-y-4">
-                  {/* Compatibility */}
-                  <Card className="border-card-border p-5">
-                    <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                      <MonitorSmartphone className="h-4 w-4" /> Compatibility
-                    </h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Platform</span>
-                        <span className="font-medium">TradingView</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Plan Required</span>
-                        <span className="font-medium">Free or Paid</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Alerts</span>
-                        <span className="font-medium">Email · Push · Webhook</span>
-                      </div>
-                    </div>
-                  </Card>
-
-                  {/* Timeframes */}
-                  {indicator.bestTimeframes && indicator.bestTimeframes.length > 0 && (
-                    <Card className="border-card-border p-5">
-                      <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                        <Clock className="h-4 w-4" /> Best Timeframes
-                      </h3>
-                      <div className="flex flex-wrap gap-1.5" data-testid="timeframes-list">
-                        {indicator.bestTimeframes.map((tf, i) => (
-                          <Badge key={i} variant="secondary" className="text-xs" data-testid={`badge-timeframe-${i}`}>
-                            {tf}
-                          </Badge>
-                        ))}
-                      </div>
-                    </Card>
-                  )}
-
-                  {/* Markets */}
-                  {indicator.markets && indicator.markets.length > 0 && (
-                    <Card className="border-card-border p-5">
-                      <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                        <Globe className="h-4 w-4" /> Markets
-                      </h3>
-                      <div className="flex flex-wrap gap-1.5" data-testid="markets-list">
-                        {indicator.markets.map((m, i) => (
-                          <Badge key={i} variant="outline" className="text-xs" data-testid={`badge-market-${i}`}>
-                            {m}
-                          </Badge>
-                        ))}
-                      </div>
-                    </Card>
-                  )}
-                </div>
-              </aside>
             </div>
           </Tabs>
         </motion.div>
