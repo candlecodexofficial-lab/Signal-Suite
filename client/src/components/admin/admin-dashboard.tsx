@@ -18,9 +18,12 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
   Search, CheckCircle2, XCircle, Clock, Mail, Phone, TrendingUp, Calendar, CreditCard,
   Package, User as UserIcon, ExternalLink, ChevronRight, ChevronsRight, Users, X, ShieldCheck,
-  Inbox, Download, Eye, ChevronDown, ChevronUp, Hourglass, AlertCircle,
+  Inbox, Download, Eye, ChevronDown, ChevronUp, Hourglass, AlertCircle, MoreHorizontal,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -1008,45 +1011,54 @@ function TodayRequestsPanel({
                         </TableCell>
 
                         <TableCell className="text-center">
-                          <div className="flex flex-col items-stretch gap-1">
-                            <div className="flex items-center justify-center gap-1.5">
-                              <Button
-                                size="sm"
-                                className="h-7 gap-1 bg-emerald-600 px-2.5 text-xs text-white hover:bg-emerald-600/90 dark:bg-emerald-500 dark:hover:bg-emerald-500/90"
-                                onClick={() => onApprove(orderId)}
-                                disabled={isApprovingRow || itemCount === 0}
-                                data-testid={`button-today-grant-${orderId}`}
-                                title={`Grant access for order #${orderId}`}
-                              >
-                                <CheckCircle2 className="h-3 w-3" />
-                                Grant Order
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="h-7 gap-1 px-2.5 text-xs"
-                                onClick={() => onReject(orderId, fullName)}
-                                data-testid={`button-today-reject-${orderId}`}
-                                title={`Reject order #${orderId}`}
-                              >
-                                <X className="h-3 w-3" />
-                                Reject Order
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 gap-1 px-2.5 text-xs"
-                                onClick={() => onToggleExpanded(orderId)}
-                                data-testid={`button-today-hold-${orderId}`}
-                                title="Hold for later (open quick view)"
-                              >
-                                <Hourglass className="h-3 w-3" />
-                                Hold
-                              </Button>
-                            </div>
+                          <div className="flex flex-col items-center gap-1">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 gap-1 px-2 text-xs"
+                                  disabled={isApprovingRow}
+                                  data-testid={`button-today-actions-${orderId}`}
+                                  aria-label={`Actions for order #${orderId}`}
+                                >
+                                  <MoreHorizontal className="h-3 w-3" />
+                                  Action
+                                  <ChevronDown className="h-3 w-3 opacity-60" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-44">
+                                <DropdownMenuLabel className="text-[11px]">Order #{orderId}</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onSelect={() => onApprove(orderId)}
+                                  disabled={isApprovingRow || itemCount === 0}
+                                  className="text-emerald-700 focus:text-emerald-700 dark:text-emerald-400 dark:focus:text-emerald-400"
+                                  data-testid={`button-today-grant-${orderId}`}
+                                >
+                                  <CheckCircle2 className="mr-2 h-3.5 w-3.5" />
+                                  Grant Order
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onSelect={() => onReject(orderId, fullName)}
+                                  className="text-rose-700 focus:text-rose-700 dark:text-rose-400 dark:focus:text-rose-400"
+                                  data-testid={`button-today-reject-${orderId}`}
+                                >
+                                  <X className="mr-2 h-3.5 w-3.5" />
+                                  Reject Order
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onSelect={() => onToggleExpanded(orderId)}
+                                  data-testid={`button-today-hold-${orderId}`}
+                                >
+                                  <Hourglass className="mr-2 h-3.5 w-3.5" />
+                                  Hold
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                             {itemCount > 1 && (
                               <p className="text-center text-[10px] text-amber-700 dark:text-amber-400" data-testid={`text-today-multi-${orderId}`}>
-                                Affects all {itemCount} items in this order
+                                Affects all {itemCount} items
                               </p>
                             )}
                           </div>
