@@ -20,6 +20,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useCart, computeStrategyPrice, computeBothPrice, computeVersionPrice, computeTrialPrice, VERSION_LABELS, type ProductVersion } from "@/components/cart-provider";
 import { useAuth } from "@/components/auth-provider";
 import { AdminIndicatorActions } from "@/components/admin/admin-indicator-controls";
+import { SectionEditButton } from "@/components/admin/section-edit-button";
 import { useLocation } from "wouter";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -336,6 +337,15 @@ export default function IndicatorDetail() {
           {/* HERO */}
           <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
             <div className="min-w-0">
+              {isAdmin && (
+                <div className="mb-3 flex flex-wrap gap-1.5" data-testid="admin-hero-edit-row">
+                  <SectionEditButton indicator={indicator} section="hero" label="Edit Hero" />
+                  <SectionEditButton indicator={indicator} section="meta" label="Edit Meta" />
+                  <SectionEditButton indicator={indicator} section="tags" label="Edit Tags" />
+                  <SectionEditButton indicator={indicator} section="rating" label="Edit Rating" />
+                  <SectionEditButton indicator={indicator} section="pricing" label="Edit Pricing" />
+                </div>
+              )}
               <div className="flex flex-wrap items-center gap-2">
                 {indicator.nonRepainting && (
                   <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-400 gap-1" data-testid="badge-non-repainting">
@@ -522,10 +532,16 @@ export default function IndicatorDetail() {
                   <div className="grid gap-6 lg:grid-cols-12">
                     {/* LEFT: About + Key Features */}
                     <Card className="border-card-border p-6 lg:col-span-7">
-                      <h2 className="mb-3 text-lg font-semibold" data-testid="text-about-title">About This Indicator</h2>
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <h2 className="text-lg font-semibold" data-testid="text-about-title">About This Indicator</h2>
+                        {isAdmin && <SectionEditButton indicator={indicator} section="about" />}
+                      </div>
                       <TextBlock content={indicator.description} />
                       <div className="mt-6">
-                        <h3 className="mb-3 text-base font-semibold" data-testid="text-features-title">Key Features</h3>
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                          <h3 className="text-base font-semibold" data-testid="text-features-title">Key Features</h3>
+                          {isAdmin && <SectionEditButton indicator={indicator} section="features" />}
+                        </div>
                         <ul className="space-y-2 pl-1" data-testid="features-list">
                           {indicator.features.map((f, i) => (
                             <li key={i} className="flex items-start gap-2 text-sm" data-testid={`feature-${i}`}>
@@ -544,7 +560,12 @@ export default function IndicatorDetail() {
                         const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{6,})/);
                         const hasVideo = Boolean(yt || url);
                         return (
-                          <Card className="border-card-border overflow-hidden p-0" data-testid="card-video-tutorial">
+                          <Card className="relative border-card-border overflow-hidden p-0" data-testid="card-video-tutorial">
+                            {isAdmin && (
+                              <div className="absolute right-2 top-2 z-20" data-testid="admin-video-edit">
+                                <SectionEditButton indicator={indicator} section="video" label="Edit Video" />
+                              </div>
+                            )}
                             <div className="relative aspect-video bg-black">
                               {yt ? (
                                 <iframe
@@ -591,7 +612,10 @@ export default function IndicatorDetail() {
                       })()}
 
                       <Card className="border-card-border p-6" data-testid="card-overview-compatibility">
-                        <h2 className="mb-3 text-base font-semibold">Compatibility</h2>
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                          <h2 className="text-base font-semibold">Compatibility</h2>
+                          {isAdmin && <SectionEditButton indicator={indicator} section="markets" />}
+                        </div>
                         <div className="flex items-center justify-between border-b border-card-border pb-3 text-sm">
                           <span className="text-muted-foreground">Platform</span>
                           <span className="font-medium">TradingView</span>
@@ -630,12 +654,15 @@ export default function IndicatorDetail() {
 
                   {/* Live Signal Example + stats */}
                   <Card className="border-card-border p-6">
-                    <div className="mb-4 flex items-center justify-between">
+                    <div className="mb-4 flex items-center justify-between gap-2">
                       <h2 className="text-lg font-semibold" data-testid="text-signal-example-title">Live Signal Example</h2>
-                      <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
-                        <span className="mr-1 h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
-                        Live
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        {isAdmin && <SectionEditButton indicator={indicator} section="stats" />}
+                        <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-400">
+                          <span className="mr-1 h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
+                          Live
+                        </Badge>
+                      </div>
                     </div>
                     <ChartPreview
                       symbol={indicator.tradingViewSymbol || stats.bestMarket}
@@ -655,74 +682,111 @@ export default function IndicatorDetail() {
 
                 {/* HOW IT WORKS */}
                 <TabsContent value="how" className="m-0 space-y-6">
-                  {indicator.signalLogic ? (
+                  {(indicator.signalLogic || isAdmin) && (
                     <Card className="border-card-border p-6">
-                      <div className="mb-4 flex items-center gap-2">
-                        <Brain className="h-4 w-4 text-primary" />
-                        <h2 className="text-lg font-semibold">Signal Logic & Methodology</h2>
+                      <div className="mb-4 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Brain className="h-4 w-4 text-primary" />
+                          <h2 className="text-lg font-semibold">Signal Logic & Methodology</h2>
+                        </div>
+                        {isAdmin && <SectionEditButton indicator={indicator} section="signalLogic" />}
                       </div>
-                      {hasAccess ? <TextBlock content={indicator.signalLogic} /> : <LockedBlock message={lockMessage} />}
+                      {indicator.signalLogic ? (
+                        hasAccess ? <TextBlock content={indicator.signalLogic} /> : <LockedBlock message={lockMessage} />
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic" data-testid="signal-logic-empty">
+                          No signal logic added yet. Click Edit to add one.
+                        </p>
+                      )}
                     </Card>
-                  ) : null}
-
-                  {(indicator.entryConditions || indicator.exitConditions) && (
-                    hasAccess ? (
-                      <div className="grid gap-4 md:grid-cols-2">
-                        {indicator.entryConditions && (
-                          <Card className="border-card-border p-6" data-testid="entry-conditions">
-                            <div className="mb-3 flex items-center gap-2">
-                              <LogIn className="h-4 w-4 text-emerald-500" />
-                              <h3 className="font-semibold text-emerald-500">Entry Conditions</h3>
-                            </div>
-                            <TextBlock content={indicator.entryConditions} />
-                          </Card>
-                        )}
-                        {indicator.exitConditions && (
-                          <Card className="border-card-border p-6" data-testid="exit-conditions">
-                            <div className="mb-3 flex items-center gap-2">
-                              <LogOutIcon className="h-4 w-4 text-rose-500" />
-                              <h3 className="font-semibold text-rose-500">Exit Conditions</h3>
-                            </div>
-                            <TextBlock content={indicator.exitConditions} />
-                          </Card>
-                        )}
-                      </div>
-                    ) : (
-                      <LockedBlock message={lockMessage} />
-                    )
                   )}
 
-                  {(indicator.stopLossStrategy || indicator.targetStrategy) && (
-                    hasAccess ? (
-                      <div className="grid gap-4 md:grid-cols-2">
-                        {indicator.stopLossStrategy && (
-                          <Card className="border-card-border p-6" data-testid="stoploss-strategy">
-                            <div className="mb-3 flex items-center gap-2">
-                              <Crosshair className="h-4 w-4 text-amber-500" />
-                              <h3 className="font-semibold">Stop-Loss Strategy</h3>
-                            </div>
-                            <TextBlock content={indicator.stopLossStrategy} />
-                          </Card>
-                        )}
-                        {indicator.targetStrategy && (
-                          <Card className="border-card-border p-6" data-testid="target-strategy">
-                            <div className="mb-3 flex items-center gap-2">
-                              <Target className="h-4 w-4 text-primary" />
-                              <h3 className="font-semibold">Target Strategy</h3>
-                            </div>
-                            <TextBlock content={indicator.targetStrategy} />
-                          </Card>
-                        )}
-                      </div>
-                    ) : (
-                      <div data-testid="risk-management-locked">
-                        <div className="mb-3 flex items-center gap-2">
-                          <Crosshair className="h-4 w-4 text-amber-500" />
-                          <h3 className="font-semibold">Risk Management</h3>
+                  {(indicator.entryConditions || indicator.exitConditions || isAdmin) && (
+                    <div className="space-y-3">
+                      {isAdmin && (
+                        <div className="flex items-center justify-between gap-2" data-testid="admin-entryexit-bar">
+                          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Entry & Exit</h3>
+                          <SectionEditButton indicator={indicator} section="entryExit" label="Edit Entry/Exit" />
                         </div>
+                      )}
+                      {hasAccess ? (
+                        (indicator.entryConditions || indicator.exitConditions) ? (
+                          <div className="grid gap-4 md:grid-cols-2">
+                            {indicator.entryConditions && (
+                              <Card className="border-card-border p-6" data-testid="entry-conditions">
+                                <div className="mb-3 flex items-center gap-2">
+                                  <LogIn className="h-4 w-4 text-emerald-500" />
+                                  <h3 className="font-semibold text-emerald-500">Entry Conditions</h3>
+                                </div>
+                                <TextBlock content={indicator.entryConditions} />
+                              </Card>
+                            )}
+                            {indicator.exitConditions && (
+                              <Card className="border-card-border p-6" data-testid="exit-conditions">
+                                <div className="mb-3 flex items-center gap-2">
+                                  <LogOutIcon className="h-4 w-4 text-rose-500" />
+                                  <h3 className="font-semibold text-rose-500">Exit Conditions</h3>
+                                </div>
+                                <TextBlock content={indicator.exitConditions} />
+                              </Card>
+                            )}
+                          </div>
+                        ) : isAdmin ? (
+                          <p className="text-sm text-muted-foreground italic" data-testid="entryexit-empty">
+                            No entry/exit conditions added yet. Click Edit to add them.
+                          </p>
+                        ) : null
+                      ) : (
                         <LockedBlock message={lockMessage} />
-                      </div>
-                    )
+                      )}
+                    </div>
+                  )}
+
+                  {(indicator.stopLossStrategy || indicator.targetStrategy || isAdmin) && (
+                    <div className="space-y-3">
+                      {isAdmin && (
+                        <div className="flex items-center justify-between gap-2" data-testid="admin-riskmgmt-bar">
+                          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Risk Management</h3>
+                          <SectionEditButton indicator={indicator} section="riskMgmt" label="Edit Risk Mgmt" />
+                        </div>
+                      )}
+                      {hasAccess ? (
+                        (indicator.stopLossStrategy || indicator.targetStrategy) ? (
+                          <div className="grid gap-4 md:grid-cols-2">
+                            {indicator.stopLossStrategy && (
+                              <Card className="border-card-border p-6" data-testid="stoploss-strategy">
+                                <div className="mb-3 flex items-center gap-2">
+                                  <Crosshair className="h-4 w-4 text-amber-500" />
+                                  <h3 className="font-semibold">Stop-Loss Strategy</h3>
+                                </div>
+                                <TextBlock content={indicator.stopLossStrategy} />
+                              </Card>
+                            )}
+                            {indicator.targetStrategy && (
+                              <Card className="border-card-border p-6" data-testid="target-strategy">
+                                <div className="mb-3 flex items-center gap-2">
+                                  <Target className="h-4 w-4 text-primary" />
+                                  <h3 className="font-semibold">Target Strategy</h3>
+                                </div>
+                                <TextBlock content={indicator.targetStrategy} />
+                              </Card>
+                            )}
+                          </div>
+                        ) : isAdmin ? (
+                          <p className="text-sm text-muted-foreground italic" data-testid="riskmgmt-empty">
+                            No risk management strategies added yet. Click Edit to add them.
+                          </p>
+                        ) : null
+                      ) : (
+                        <div data-testid="risk-management-locked">
+                          <div className="mb-3 flex items-center gap-2">
+                            <Crosshair className="h-4 w-4 text-amber-500" />
+                            <h3 className="font-semibold">Risk Management</h3>
+                          </div>
+                          <LockedBlock message={lockMessage} />
+                        </div>
+                      )}
+                    </div>
                   )}
                 </TabsContent>
 
@@ -763,7 +827,10 @@ export default function IndicatorDetail() {
                 {/* FAQ */}
                 <TabsContent value="faq" className="m-0">
                   <Card className="border-card-border p-6">
-                    <h2 className="mb-4 text-lg font-semibold">Frequently Asked Questions</h2>
+                    <div className="mb-4 flex items-center justify-between gap-2">
+                      <h2 className="text-lg font-semibold">Frequently Asked Questions</h2>
+                      {isAdmin && <SectionEditButton indicator={indicator} section="faqs" />}
+                    </div>
                     {faqItems.length > 0 ? (
                       <Accordion type="single" collapsible className="w-full">
                         {faqItems.map((item, i) => (

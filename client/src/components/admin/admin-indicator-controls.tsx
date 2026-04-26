@@ -136,7 +136,7 @@ export function AdminIndicatorActions({
           <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
             <Shield className="h-3.5 w-3.5" /> Admin
           </span>
-          <span className="text-[11px] text-muted-foreground">Editing live page</span>
+          <span className="text-[11px] text-muted-foreground">Click any section's Edit button to change it. Use "Edit All Fields" to open the full form.</span>
           <div className="ml-auto flex items-center gap-2">
             <Button
               size="sm"
@@ -145,7 +145,7 @@ export function AdminIndicatorActions({
               onClick={() => setEditing(true)}
               data-testid={`button-admin-edit-toolbar-${indicator.id}`}
             >
-              <Edit3 className="mr-1.5 h-3.5 w-3.5" /> Edit
+              <Edit3 className="mr-1.5 h-3.5 w-3.5" /> Edit All Fields
             </Button>
             <Button
               size="sm"
