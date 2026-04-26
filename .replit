@@ -42,3 +42,7 @@ waitForPort = 5000
 
 [userenv.shared]
 ADMIN_EMAIL = "siddharthtkd11@gmail.com"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
