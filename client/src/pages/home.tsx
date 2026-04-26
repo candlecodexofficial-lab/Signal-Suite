@@ -1,4 +1,4 @@
-import { ArrowRight, Shield, Zap, BarChart3, ChevronRight } from "lucide-react";
+import { ArrowRight, Shield, Zap, BarChart3, ChevronRight, Activity, Droplets, Target, BellRing } from "lucide-react";
 import { SiFacebook, SiX, SiYoutube, SiWhatsapp, SiTelegram, SiInstagram } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -98,6 +98,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <SystemFramework />
 
       <IndicatorMarquee />
 
@@ -305,6 +307,177 @@ function IndicatorMarquee() {
             View All Indicators <ArrowRight className="ml-1 h-4 w-4" />
           </Button>
         </Link>
+      </div>
+    </section>
+  );
+}
+
+const frameworkSteps = [
+  {
+    icon: Activity,
+    title: "Market Structure",
+    description: "Identify trend and key structure in market",
+    accent: "from-sky-500/30 to-blue-600/10",
+    ring: "ring-sky-400/40",
+    iconColor: "text-sky-300",
+    glow: "shadow-[0_0_40px_-10px_rgba(56,189,248,0.55)]",
+    topLineColor: "rgba(56,189,248,0.65)",
+  },
+  {
+    icon: Droplets,
+    title: "Liquidity Sweep",
+    description: "Detect liquidity grab and stop hunts",
+    accent: "from-violet-500/30 to-fuchsia-600/10",
+    ring: "ring-violet-400/40",
+    iconColor: "text-violet-300",
+    glow: "shadow-[0_0_40px_-10px_rgba(167,139,250,0.55)]",
+    topLineColor: "rgba(167,139,250,0.65)",
+  },
+  {
+    icon: Target,
+    title: "Confirmation",
+    description: "Multi-factor confirmation for high probability",
+    accent: "from-amber-500/30 to-orange-600/10",
+    ring: "ring-amber-400/40",
+    iconColor: "text-amber-300",
+    glow: "shadow-[0_0_40px_-10px_rgba(251,191,36,0.55)]",
+    topLineColor: "rgba(251,191,36,0.65)",
+  },
+  {
+    icon: BellRing,
+    title: "Signal Generated",
+    description: "High probability signal with entry, SL, targets",
+    accent: "from-emerald-500/30 to-green-600/10",
+    ring: "ring-emerald-400/40",
+    iconColor: "text-emerald-300",
+    glow: "shadow-[0_0_40px_-10px_rgba(52,211,153,0.55)]",
+    topLineColor: "rgba(52,211,153,0.65)",
+  },
+];
+
+function SystemFramework() {
+  return (
+    <section
+      className="relative overflow-hidden border-t border-white/5 bg-gradient-to-b from-black via-zinc-950 to-zinc-950 py-20 sm:py-24"
+      data-testid="section-framework"
+    >
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.07]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.6) 1px, transparent 1px)",
+          backgroundSize: "48px 48px",
+          maskImage:
+            "radial-gradient(ellipse at center, black 30%, transparent 75%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse at center, black 30%, transparent 75%)",
+        }}
+      />
+      <div className="pointer-events-none absolute -top-24 left-1/2 h-72 w-[40rem] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.5 }}
+          className="mx-auto max-w-2xl text-center"
+        >
+          <Badge variant="secondary" className="mb-3 border-primary/20 bg-primary/10 text-primary" data-testid="badge-framework">
+            How It Works
+          </Badge>
+          <h2
+            className="text-3xl font-bold tracking-tight text-white sm:text-4xl"
+            data-testid="text-framework-title"
+          >
+            Our System Framework
+          </h2>
+          <p className="mt-3 text-base text-zinc-400">
+            A disciplined four-stage process behind every TradeVault signal — from raw market structure to a high-probability trade plan.
+          </p>
+        </motion.div>
+
+        <div className="relative mt-14">
+          <motion.div
+            aria-hidden
+            initial={{ scaleX: 0, opacity: 0 }}
+            whileInView={{ scaleX: 1, opacity: 1 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 1.1, ease: "easeOut", delay: 0.1 }}
+            className="pointer-events-none absolute left-6 right-6 top-9 hidden h-px origin-left bg-gradient-to-r from-sky-400/0 via-white/30 to-emerald-400/0 lg:block"
+          />
+
+          <ol className="relative grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
+            {frameworkSteps.map((step, i) => {
+              const Icon = step.icon;
+              return (
+                <motion.li
+                  key={step.title}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-80px" }}
+                  transition={{ duration: 0.5, delay: 0.15 + i * 0.12, ease: "easeOut" }}
+                  className="relative"
+                  data-testid={`framework-step-${i}`}
+                >
+                  <div className="group relative h-full rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.05]">
+                    <div
+                      className="absolute inset-x-6 -top-px h-px opacity-70"
+                      style={{
+                        backgroundImage: `linear-gradient(to right, transparent, ${step.topLineColor}, transparent)`,
+                      }}
+                    />
+
+                    <div className="mb-5 flex items-center gap-3">
+                      <div className={`relative flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br ${step.accent} ring-1 ${step.ring} ${step.glow} transition-transform duration-300 group-hover:scale-105`}>
+                        <Icon className={`h-6 w-6 ${step.iconColor}`} strokeWidth={2.2} />
+                        <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-white/15 bg-zinc-900 text-[10px] font-semibold text-zinc-300">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <h3 className="text-lg font-semibold text-white" data-testid={`text-framework-step-title-${i}`}>
+                      {step.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-relaxed text-zinc-400" data-testid={`text-framework-step-desc-${i}`}>
+                      {step.description}
+                    </p>
+
+                    <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" style={{
+                      background:
+                        "radial-gradient(60% 60% at 50% 0%, rgba(255,255,255,0.06), transparent 60%)",
+                    }} />
+                  </div>
+
+                  {i < frameworkSteps.length - 1 && (
+                    <div
+                      aria-hidden
+                      className="absolute right-0 top-1/2 z-10 hidden -translate-y-1/2 translate-x-1/2 lg:flex"
+                    >
+                      <motion.div
+                        initial={{ opacity: 0, x: -6 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true, margin: "-80px" }}
+                        transition={{ duration: 0.5, delay: 0.4 + i * 0.12 }}
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-zinc-900/80 text-zinc-300 backdrop-blur"
+                      >
+                        <ArrowRight className="h-4 w-4" />
+                      </motion.div>
+                    </div>
+                  )}
+
+                  {i < frameworkSteps.length - 1 && (
+                    <div aria-hidden className="flex justify-center pt-4 sm:hidden">
+                      <ArrowRight className="h-5 w-5 rotate-90 text-zinc-500" />
+                    </div>
+                  )}
+                </motion.li>
+              );
+            })}
+          </ol>
+        </div>
       </div>
     </section>
   );
