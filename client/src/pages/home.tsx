@@ -1,4 +1,4 @@
-import { ArrowRight, Shield, Zap, BarChart3, ChevronRight, Activity, Droplets, Target, BellRing, Check, Clock, Sparkles, Rocket, TrendingUp, Send, Star, Quote, ShieldCheck } from "lucide-react";
+import { ArrowRight, Shield, Zap, BarChart3, ChevronRight, Activity, Droplets, Target, BellRing, Check, Clock, Sparkles, Rocket, TrendingUp, Send, Star, Quote, ShieldCheck, Crosshair, Layers, MousePointer2, Feather } from "lucide-react";
 import { SiFacebook, SiX, SiYoutube, SiWhatsapp, SiTelegram, SiInstagram } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,21 +21,54 @@ const socialLinks = [
   { name: "Instagram", href: "https://instagram.com", icon: SiInstagram, bg: "bg-gradient-to-br from-[#F58529] via-[#DD2A7B] to-[#8134AF]" },
 ];
 
-const features = [
+const keyFeatures = [
   {
-    icon: Shield,
-    title: "Battle-Tested Strategies",
-    description: "Every indicator is backtested across thousands of trades and multiple market conditions.",
+    icon: Crosshair,
+    title: "Non-Repainting",
+    description: "100% non-repainting signals you can trust on closed candles.",
+    iconClass: "text-sky-300",
+    ringClass: "ring-sky-400/30",
+    glowClass: "from-sky-500/20 to-sky-500/0",
   },
   {
-    icon: Zap,
-    title: "Real-Time Signals",
-    description: "Get instant alerts on TradingView when your indicators detect high-probability setups.",
+    icon: Target,
+    title: "High Accuracy",
+    description: "Backtested across 5+ years of multi-asset, multi-regime data.",
+    iconClass: "text-emerald-300",
+    ringClass: "ring-emerald-400/30",
+    glowClass: "from-emerald-500/20 to-emerald-500/0",
   },
   {
-    icon: BarChart3,
-    title: "Proven Performance",
-    description: "Transparent win rates, average returns, and trade history for every indicator we offer.",
+    icon: Layers,
+    title: "Multi-Timeframe",
+    description: "Works seamlessly on every timeframe from 1m scalps to weekly swings.",
+    iconClass: "text-zinc-200",
+    ringClass: "ring-zinc-400/25",
+    glowClass: "from-zinc-400/15 to-zinc-400/0",
+  },
+  {
+    icon: BellRing,
+    title: "Real-Time Alerts",
+    description: "Get notified on every high-probability setup the moment it triggers.",
+    iconClass: "text-pink-300",
+    ringClass: "ring-pink-400/30",
+    glowClass: "from-pink-500/20 to-pink-500/0",
+  },
+  {
+    icon: MousePointer2,
+    title: "Easy to Use",
+    description: "Plug and play directly on TradingView in under two minutes.",
+    iconClass: "text-blue-300",
+    ringClass: "ring-blue-400/30",
+    glowClass: "from-blue-500/20 to-blue-500/0",
+  },
+  {
+    icon: Feather,
+    title: "Lightweight",
+    description: "Optimized code keeps your charts fast with zero lag or stutter.",
+    iconClass: "text-indigo-300",
+    ringClass: "ring-indigo-400/30",
+    glowClass: "from-indigo-500/20 to-indigo-500/0",
   },
 ];
 
@@ -79,28 +112,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="features" className="border-b">
-        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-          <div className="grid gap-8 md:grid-cols-3">
-            {features.map((feature, i) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: i * 0.1 }}
-                className="flex flex-col gap-3"
-                data-testid={`feature-${i}`}
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10">
-                  <feature.icon className="h-5 w-5 text-primary" />
-                </div>
-                <h3 className="text-base font-semibold">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <KeyFeatures />
 
       <SystemFramework />
 
@@ -1115,6 +1127,89 @@ function Testimonials() {
             transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut", delay: i * 0.4 }}
           />
         ))}
+      </div>
+    </section>
+  );
+}
+
+function KeyFeatures() {
+  return (
+    <section
+      id="features"
+      className="relative overflow-hidden border-t border-white/5 bg-gradient-to-b from-black via-zinc-950 to-black py-14 sm:py-16"
+      data-testid="section-key-features"
+    >
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+      <div className="pointer-events-none absolute -top-24 left-1/3 h-56 w-[32rem] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.5 }}
+          className="max-w-2xl"
+        >
+          <Badge
+            variant="secondary"
+            className="mb-3 border-primary/20 bg-primary/10 text-primary"
+            data-testid="badge-key-features"
+          >
+            Key Features
+          </Badge>
+          <h2
+            className="text-2xl font-bold tracking-tight text-white sm:text-3xl"
+            data-testid="text-key-features-title"
+          >
+            Built for traders who demand precision.
+          </h2>
+          <p className="mt-2 text-sm text-zinc-400 sm:text-base">
+            Why traders love TradeVault indicators.
+          </p>
+        </motion.div>
+
+        <motion.ul
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-80px" }}
+          variants={{
+            hidden: {},
+            show: { transition: { staggerChildren: 0.07, delayChildren: 0.1 } },
+          }}
+          className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          {keyFeatures.map((f) => (
+            <motion.li
+              key={f.title}
+              variants={{
+                hidden: { opacity: 0, y: 16 },
+                show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } },
+              }}
+              className="group relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-5 transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.06]"
+              data-testid={`card-feature-${f.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+            >
+              <div
+                className={`pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br ${f.glowClass} opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100`}
+                aria-hidden
+              />
+
+              <div
+                className={`relative flex h-11 w-11 items-center justify-center rounded-full bg-white/5 ring-1 ${f.ringClass} transition-transform duration-300 group-hover:scale-105`}
+              >
+                <f.icon className={`h-5 w-5 ${f.iconClass}`} aria-hidden />
+              </div>
+
+              <h3 className="mt-4 text-base font-semibold text-white">
+                {f.title}
+              </h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
+                {f.description}
+              </p>
+
+              <div className="mt-5 h-px w-full bg-gradient-to-r from-white/0 via-white/10 to-white/0 opacity-60" />
+            </motion.li>
+          ))}
+        </motion.ul>
       </div>
     </section>
   );
