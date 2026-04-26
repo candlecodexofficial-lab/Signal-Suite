@@ -1,11 +1,14 @@
-import { ArrowRight, Shield, Zap, BarChart3, ChevronRight, Activity, Droplets, Target, BellRing, Check, Clock, Sparkles } from "lucide-react";
+import { ArrowRight, Shield, Zap, BarChart3, ChevronRight, Activity, Droplets, Target, BellRing, Check, Clock, Sparkles, Rocket, TrendingUp, Send } from "lucide-react";
 import { SiFacebook, SiX, SiYoutube, SiWhatsapp, SiTelegram, SiInstagram } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { IndicatorCard } from "@/components/indicator-card";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 import type { Indicator } from "@shared/schema";
 import supportWomanImg from "@assets/generated_images/footer_support_woman.png";
 
@@ -196,20 +199,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="border-t" id="footer">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-            <p className="text-sm text-muted-foreground" data-testid="text-footer">
-              TradeVault. Professional TradingView Indicators.
-            </p>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span>Terms</span>
-              <span>Privacy</span>
-              <span>Support</span>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
@@ -687,5 +677,248 @@ function PricingPlans() {
         </p>
       </div>
     </section>
+  );
+}
+
+const footerColumns = [
+  {
+    title: "Company",
+    links: [
+      { label: "About Us", href: "/about" },
+      { label: "Contact", href: "/support" },
+      { label: "Careers", href: "/about#careers" },
+    ],
+  },
+  {
+    title: "Resources",
+    links: [
+      { label: "Documentation", href: "/support" },
+      { label: "Blog", href: "/about#blog" },
+      { label: "Help Center", href: "/support" },
+    ],
+  },
+  {
+    title: "Legal",
+    links: [
+      { label: "Privacy Policy", href: "/support#privacy" },
+      { label: "Terms of Service", href: "/support#terms" },
+      { label: "Refund Policy", href: "/support#refund" },
+    ],
+  },
+];
+
+const footerSocials = [
+  { name: "Twitter", href: "https://x.com", icon: SiX },
+  { name: "YouTube", href: "https://youtube.com", icon: SiYoutube },
+  { name: "Telegram", href: "https://t.me/tradevault", icon: SiTelegram },
+  { name: "Instagram", href: "https://instagram.com", icon: SiInstagram },
+];
+
+function SiteFooter() {
+  const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setSubmitting(true);
+    toast({
+      title: "You're on the list",
+      description: "We'll send the next TradeVault update straight to your inbox.",
+    });
+    window.setTimeout(() => {
+      setEmail("");
+      setSubmitting(false);
+    }, 400);
+  };
+
+  const year = new Date().getFullYear();
+
+  return (
+    <footer className="relative overflow-hidden bg-black" id="footer" data-testid="site-footer">
+      <div className="mx-auto max-w-7xl px-4 pt-16 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-[#0b1638] via-[#0c1e4d] to-[#1a1554] shadow-[0_20px_80px_-30px_rgba(56,99,255,0.55)]"
+          data-testid="banner-cta-final"
+        >
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.18]"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle, rgba(255,255,255,0.55) 1px, transparent 1.2px)",
+              backgroundSize: "18px 18px",
+              maskImage:
+                "linear-gradient(to right, black 35%, transparent 95%)",
+              WebkitMaskImage:
+                "linear-gradient(to right, black 35%, transparent 95%)",
+            }}
+          />
+          <div className="pointer-events-none absolute -bottom-24 right-1/3 h-72 w-72 rounded-full bg-primary/40 blur-3xl" />
+          <div className="pointer-events-none absolute -top-20 -left-10 h-48 w-48 rounded-full bg-fuchsia-500/20 blur-3xl" />
+
+          <div className="relative grid grid-cols-1 items-center gap-6 px-6 py-8 sm:px-10 sm:py-10 md:grid-cols-[auto_1fr_auto] md:gap-10">
+            <motion.div
+              aria-hidden
+              initial={{ y: 0, rotate: -12 }}
+              animate={{ y: [-4, 6, -4], rotate: -12 }}
+              transition={{ duration: 4, ease: "easeInOut", repeat: Infinity }}
+              className="relative flex h-20 w-20 items-center justify-center sm:h-24 sm:w-24"
+            >
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-sky-400/40 via-primary/40 to-fuchsia-500/40 blur-xl" />
+              <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-white/15 bg-gradient-to-br from-white/10 to-white/[0.02] shadow-inner sm:h-20 sm:w-20">
+                <Rocket className="h-8 w-8 -rotate-12 text-white drop-shadow-[0_4px_12px_rgba(255,255,255,0.4)] sm:h-10 sm:w-10" />
+                <span className="absolute -bottom-1 left-1/2 h-3 w-1 -translate-x-1/2 rounded-full bg-orange-400 blur-[2px]" />
+              </div>
+            </motion.div>
+
+            <div className="text-center md:text-left">
+              <h2
+                className="text-2xl font-bold tracking-tight text-white sm:text-3xl md:text-4xl"
+                data-testid="text-final-cta-title"
+              >
+                Stop Guessing. Start Executing.
+              </h2>
+              <p className="mt-2 text-sm text-zinc-300 sm:text-base">
+                Join thousands of profitable traders who trust our indicators.
+              </p>
+            </div>
+
+            <div className="flex justify-center md:justify-end">
+              <Button
+                asChild
+                size="lg"
+                className="bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:bg-primary/90"
+                data-testid="button-final-cta"
+              >
+                <Link href="/indicators" aria-label="Unlock all TradeVault indicators">
+                  Unlock All Indicators <ArrowRight className="ml-1 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
+          className="grid grid-cols-1 gap-10 pt-14 pb-10 sm:grid-cols-2 lg:grid-cols-12"
+        >
+          <div className="lg:col-span-4">
+            <Link href="/" className="inline-flex items-center gap-2" data-testid="link-footer-brand">
+              <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/15 ring-1 ring-primary/30">
+                <TrendingUp className="h-4 w-4 text-primary" />
+              </span>
+              <span className="text-lg font-bold text-white">TradeVault</span>
+            </Link>
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-zinc-400">
+              Premium TradingView indicators for serious traders. Built with precision, tested for performance.
+            </p>
+            <div className="mt-5 flex items-center gap-3" data-testid="list-footer-social">
+              {footerSocials.map((s) => (
+                <a
+                  key={s.name}
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={s.name}
+                  title={s.name}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-white/10 bg-white/5 text-zinc-300 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/10 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  data-testid={`link-footer-social-${s.name.toLowerCase()}`}
+                >
+                  <s.icon className="h-4 w-4" />
+                </a>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-8 sm:col-span-2 sm:grid-cols-3 lg:col-span-5 lg:grid-cols-3 lg:gap-6 lg:pl-4">
+            {footerColumns.map((col) => (
+              <div key={col.title}>
+                <h3 className="text-sm font-semibold text-white">{col.title}</h3>
+                <ul className="mt-4 space-y-2.5">
+                  {col.links.map((l) => (
+                    <li key={l.label}>
+                      <Link
+                        href={l.href}
+                        className="text-sm text-zinc-400 transition-colors hover:text-primary"
+                        data-testid={`link-footer-${l.label.toLowerCase().replace(/\s+/g, "-")}`}
+                      >
+                        {l.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          <div className="lg:col-span-3">
+            <h3 className="text-sm font-semibold text-white">Stay Updated</h3>
+            <p className="mt-4 text-sm text-zinc-400">
+              Get the latest updates and market insights.
+            </p>
+            <form
+              onSubmit={handleSubscribe}
+              noValidate
+              className="mt-4 flex w-full items-stretch gap-2"
+              data-testid="form-newsletter"
+            >
+              <Input
+                type="text"
+                inputMode="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                aria-label="Email address"
+                className="h-10 flex-1 border-white/10 bg-white/5 text-sm text-white placeholder:text-zinc-500 focus-visible:border-primary/60 focus-visible:ring-primary/40"
+                data-testid="input-newsletter-email"
+              />
+              <Button
+                type="submit"
+                disabled={submitting}
+                className="h-10 shrink-0 bg-primary text-primary-foreground hover:bg-primary/90"
+                data-testid="button-newsletter-subscribe"
+              >
+                {submitting ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Send className="h-3.5 w-3.5 animate-pulse" />
+                    Sending
+                  </span>
+                ) : (
+                  "Subscribe"
+                )}
+              </Button>
+            </form>
+          </div>
+        </motion.div>
+
+        <div className="border-t border-white/10 py-6">
+          <div className="flex flex-col items-center justify-between gap-3 text-xs text-zinc-500 sm:flex-row">
+            <p data-testid="text-footer-copyright">
+              © {year} TradeVault. All rights reserved.
+            </p>
+            <p className="text-center sm:text-right" data-testid="text-footer-disclaimer">
+              Trading involves risk. Past performance is not indicative of future results.
+            </p>
+          </div>
+        </div>
+      </div>
+    </footer>
   );
 }
