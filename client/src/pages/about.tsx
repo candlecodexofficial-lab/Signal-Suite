@@ -39,13 +39,13 @@ export default function AboutPage() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-12 max-w-3xl">
           <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-            <Sparkles className="h-3.5 w-3.5" /> About TradeVault
+            <Sparkles className="h-3.5 w-3.5" /> About Pine Signal Lab
           </div>
           <h1 className="text-3xl font-bold tracking-tight sm:text-5xl" data-testid="text-about-title">
             Built by traders. For traders who care about edge.
           </h1>
           <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-            TradeVault is a curated marketplace of premium TradingView indicators and strategies, engineered for
+            Pine Signal Lab is a curated marketplace of premium TradingView indicators and strategies, engineered for
             Indian and global markets. We obsess over signal quality, transparency and clean charting — so you can
             focus on execution, not noise.
           </p>
@@ -78,7 +78,7 @@ export default function AboutPage() {
             <h2 className="text-xl font-semibold">How we build</h2>
             <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
               Every indicator goes through three stages: research and prototyping, multi-market backtesting, and a
-              private live-trading phase. Only the ones that hold up across regimes make it to TradeVault.
+              private live-trading phase. Only the ones that hold up across regimes make it to Pine Signal Lab.
             </p>
           </Card>
         </div>

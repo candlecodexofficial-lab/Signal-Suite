@@ -50,7 +50,7 @@ export default function SupportPage() {
   };
 
   const channels = [
-    { Icon: Mail, title: "Email Us", desc: "support@tradevault.in", note: "Replies within 24 hours" },
+    { Icon: Mail, title: "Email Us", desc: "support@pinesignallab.in", note: "Replies within 24 hours" },
     { Icon: MessageCircle, title: "WhatsApp", desc: "+91 89201 67711", note: "Mon – Sat, 10 AM – 7 PM IST" },
     { Icon: Clock, title: "Onboarding", desc: "Instant access setup", note: "After order approval" },
   ];

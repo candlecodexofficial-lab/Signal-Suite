@@ -131,7 +131,7 @@ function StatCell({ icon: Icon, label, value, accent }: {
   );
 }
 
-const WATCHLIST_KEY = "tradevault.watchlist";
+const WATCHLIST_KEY = "pinesignallab.watchlist";
 
 function readWatchlist(): number[] {
   if (typeof window === "undefined") return [];

@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Indicator } from "@shared/schema";
 
-const WATCHLIST_KEY = "tradevault.watchlist";
+const WATCHLIST_KEY = "pinesignallab.watchlist";
 
 function readWatchlistIds(): number[] {
   if (typeof window === "undefined") return [];

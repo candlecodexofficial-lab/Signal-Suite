@@ -1,4 +1,4 @@
-# TradeVault - TradingView Indicators Marketplace
+# Pine Signal Lab - TradingView Indicators Marketplace
 
 ## Overview
 A premium web application for browsing and subscribing to TradingView indicators. Users can browse indicators organized by All/Free/Premium tiers, view detailed pages, add to cart with configurable subscription durations, sign up or log in via email-based detection, and place orders with auto-filled details.

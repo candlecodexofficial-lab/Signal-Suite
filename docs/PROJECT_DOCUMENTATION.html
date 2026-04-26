@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>TradeVault — Complete Project Documentation</title>
+<title>Pine Signal Lab — Complete Project Documentation</title>
 <style>
   :root {
     --fg: #1f2328;
@@ -91,7 +91,7 @@
 </head>
 <body>
 
-<h1>TradeVault — Complete Project Documentation</h1>
+<h1>Pine Signal Lab — Complete Project Documentation</h1>
 
 <p>A premium TradingView indicators &amp; strategies marketplace tailored for the
 Indian market. This document is intended as a developer-facing reference
@@ -102,7 +102,7 @@ business rules, REST API and admin tooling.</p>
 
 <h2>1. Overview</h2>
 
-<p><strong>Product:</strong> TradeVault is a curated marketplace where retail traders can
+<p><strong>Product:</strong> Pine Signal Lab is a curated marketplace where retail traders can
 browse, trial and subscribe to professionally built TradingView indicators
 and strategies. Access is granted by inviting the customer's TradingView
 username to invite-only Pine scripts after the order is approved by an
@@ -166,7 +166,7 @@ the React SPA.</p>
       dashboard.tsx        # Customer dashboard (orders, access, watchlist)
       admin.tsx            # Admin shell + sidebar
       support.tsx          # Help &amp; Support
-      about.tsx            # About TradeVault
+      about.tsx            # About Pine Signal Lab
       not-found.tsx
     components/
       navbar.tsx           # Top navigation
@@ -400,7 +400,7 @@ checkout (see "Known Considerations").</p>
       <li>Synthetic candle preview chart, tier badge, name, short description.</li>
       <li>Footer: rating + review count (left), "View Details →" (center),
         bookmark icon (right) which toggles the indicator into the
-        <code>tradevault.watchlist</code> localStorage list and dispatches a
+        <code>pinesignallab.watchlist</code> localStorage list and dispatches a
         <code>watchlist-updated</code> event.</li>
     </ul>
   </li>
@@ -412,7 +412,7 @@ checkout (see "Known Considerations").</p>
   <li>Header: breadcrumbs, name, short description, version + published date.</li>
   <li>Stats strip: rating, reviews, win rate, RR, profit factor.</li>
   <li>Action buttons: <strong>Get Access</strong> opens the pricing dialog;
-    <strong>Add to Watchlist</strong> toggles <code>tradevault.watchlist</code>.</li>
+    <strong>Add to Watchlist</strong> toggles <code>pinesignallab.watchlist</code>.</li>
   <li>Tabbed content: Overview / Quick Start / Reviews / FAQ.</li>
   <li>A live-feel chart preview component renders synthetic candles.</li>
   <li><strong>Pricing dialog</strong> (<code>Dialog</code> from shadcn):
@@ -462,7 +462,7 @@ checkout (see "Known Considerations").</p>
       <li>Active Indicators (count of items with <code>accessStatus === "active"</code>)</li>
       <li>Pending Requests (count of items with <code>accessStatus === "pending"</code>)</li>
       <li>Total Orders (count of orders)</li>
-      <li>Saved Indicators (size of <code>tradevault.watchlist</code> resolved against
+      <li>Saved Indicators (size of <code>pinesignallab.watchlist</code> resolved against
         <code>/api/indicators</code>)</li>
     </ul>
   </li>
@@ -495,7 +495,7 @@ checkout (see "Known Considerations").</p>
     confirmation. <strong>Wire to a real channel before launch.</strong></li>
 </ul>
 
-<h3>7.8 <code>/about</code> About TradeVault</h3>
+<h3>7.8 <code>/about</code> About Pine Signal Lab</h3>
 <p>File: <code>client/src/pages/about.tsx</code></p>
 <ul>
   <li>Hero, stats strip (10K+ Active Traders, 50+ Indicators, 24/7 Support,
@@ -631,7 +631,7 @@ the session.</p>
   </thead>
   <tbody>
     <tr><td><code>cart</code></td><td><code>cart-provider.tsx</code></td><td><code>CartItem[]</code></td></tr>
-    <tr><td><code>tradevault.watchlist</code></td><td><code>indicator-card.tsx</code>, <code>indicator-detail.tsx</code>, <code>dashboard.tsx</code></td><td><code>number[]</code> (indicator IDs)</td></tr>
+    <tr><td><code>pinesignallab.watchlist</code></td><td><code>indicator-card.tsx</code>, <code>indicator-detail.tsx</code>, <code>dashboard.tsx</code></td><td><code>number[]</code> (indicator IDs)</td></tr>
     <tr><td><code>theme</code></td><td><code>theme-toggle.tsx</code></td><td><code>"light"</code> / <code>"dark"</code></td></tr>
   </tbody>
 </table>
@@ -686,7 +686,7 @@ committed.</p>
 support buttons. Update centrally if they change.</p>
 
 <ul>
-  <li><strong>Email</strong>: support@tradevault.in</li>
+  <li><strong>Email</strong>: support@pinesignallab.in</li>
   <li><strong>WhatsApp</strong>: +91 89201 67711 (used in <code>dashboard.tsx</code> as
     <code>https://wa.me/918920167711</code> with a pre-filled message)</li>
   <li><strong>Hours</strong>: Mon–Sat, 10 AM – 7 PM IST</li>

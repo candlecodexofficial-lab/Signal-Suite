@@ -1,4 +1,4 @@
-# TradeVault — Complete Project Documentation
+# Pine Signal Lab — Complete Project Documentation
 
 A premium TradingView indicators & strategies marketplace tailored for the
 Indian market. This document is intended as a developer-facing reference
@@ -9,7 +9,7 @@ business rules, REST API and admin tooling.
 
 ## 1. Overview
 
-**Product:** TradeVault is a curated marketplace where retail traders can
+**Product:** Pine Signal Lab is a curated marketplace where retail traders can
 browse, trial and subscribe to professionally built TradingView indicators
 and strategies. Access is granted by inviting the customer's TradingView
 username to invite-only Pine scripts after the order is approved by an
@@ -67,7 +67,7 @@ client/
       dashboard.tsx        # Customer dashboard (orders, access, watchlist)
       admin.tsx            # Admin shell + sidebar
       support.tsx          # Help & Support
-      about.tsx            # About TradeVault
+      about.tsx            # About Pine Signal Lab
       not-found.tsx
     components/
       navbar.tsx           # Top navigation
@@ -259,7 +259,7 @@ File: `client/src/pages/indicators.tsx`
   - Synthetic candle preview chart, tier badge, name, short description.
   - Footer: rating + review count (left), "View Details →" (center),
     bookmark icon (right) which toggles the indicator into the
-    `tradevault.watchlist` localStorage list and dispatches a
+    `pinesignallab.watchlist` localStorage list and dispatches a
     `watchlist-updated` event.
 
 ### 7.3 `/indicator/:slug` Detail
@@ -268,7 +268,7 @@ File: `client/src/pages/indicator-detail.tsx`
 - Header: breadcrumbs, name, short description, version + published date.
 - Stats strip: rating, reviews, win rate, RR, profit factor.
 - Action buttons: **Get Access** opens the pricing dialog;
-  **Add to Watchlist** toggles `tradevault.watchlist`.
+  **Add to Watchlist** toggles `pinesignallab.watchlist`.
 - Tabbed content: Overview / Quick Start / Reviews / FAQ.
 - A live-feel chart preview component renders synthetic candles.
 - **Pricing dialog** (`Dialog` from shadcn):
@@ -311,7 +311,7 @@ File: `client/src/pages/dashboard.tsx`
   - Active Indicators (count of items with `accessStatus === "active"`)
   - Pending Requests (count of items with `accessStatus === "pending"`)
   - Total Orders (count of orders)
-  - Saved Indicators (size of `tradevault.watchlist` resolved against
+  - Saved Indicators (size of `pinesignallab.watchlist` resolved against
     `/api/indicators`)
 - Selecting a card filters the detail panel to only that section.
 - Sections:
@@ -337,7 +337,7 @@ File: `client/src/pages/support.tsx`
 - Frontend-only contact form (name, email, subject, message) with toast
   confirmation. **Wire to a real channel before launch.**
 
-### 7.8 `/about` About TradeVault
+### 7.8 `/about` About Pine Signal Lab
 File: `client/src/pages/about.tsx`
 
 - Hero, stats strip (10K+ Active Traders, 50+ Indicators, 24/7 Support,
@@ -439,7 +439,7 @@ Computed in `GET /api/dashboard`:
 | Key                    | Owner                    | Shape          |
 |------------------------|--------------------------|----------------|
 | `cart`                 | `cart-provider.tsx`      | `CartItem[]`   |
-| `tradevault.watchlist` | `indicator-card.tsx`, `indicator-detail.tsx`, `dashboard.tsx` | `number[]` (indicator IDs) |
+| `pinesignallab.watchlist` | `indicator-card.tsx`, `indicator-detail.tsx`, `dashboard.tsx` | `number[]` (indicator IDs) |
 | `theme`                | `theme-toggle.tsx`       | `"light"` / `"dark"` |
 
 Custom events:
@@ -482,7 +482,7 @@ committed.
 These are surfaced in the Help & Support page and on the dashboard
 support buttons. Update centrally if they change.
 
-- **Email**: support@tradevault.in
+- **Email**: support@pinesignallab.in
 - **WhatsApp**: +91 89201 67711 (used in `dashboard.tsx` as
   `https://wa.me/918920167711` with a pre-filled message)
 - **Hours**: Mon–Sat, 10 AM – 7 PM IST

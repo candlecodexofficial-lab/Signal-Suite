@@ -110,7 +110,7 @@ export function AuthModal() {
           <DialogDescription>
             {isReturningUser
               ? "We found your account. Confirm your details to continue."
-              : "Enter your details to get started with TradeVault."}
+              : "Enter your details to get started with Pine Signal Lab."}
           </DialogDescription>
         </DialogHeader>
 

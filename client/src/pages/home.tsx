@@ -18,7 +18,7 @@ const socialLinks = [
   { name: "Twitter", href: "https://x.com", icon: SiX, bg: "bg-black" },
   { name: "YouTube", href: "https://youtube.com", icon: SiYoutube, bg: "bg-[#FF0000]" },
   { name: "WhatsApp", href: "https://wa.me/918920167711", icon: SiWhatsapp, bg: "bg-[#25D366]" },
-  { name: "Telegram", href: "https://t.me/tradevault", icon: SiTelegram, bg: "bg-[#229ED9]" },
+  { name: "Telegram", href: "https://t.me/pinesignallab", icon: SiTelegram, bg: "bg-[#229ED9]" },
   { name: "Instagram", href: "https://instagram.com", icon: SiInstagram, bg: "bg-gradient-to-br from-[#F58529] via-[#DD2A7B] to-[#8134AF]" },
 ];
 
@@ -175,7 +175,7 @@ export default function Home() {
               <div className="relative flex items-end justify-center md:justify-start md:pl-6 lg:pl-12">
                 <img
                   src={supportWomanImg}
-                  alt="TradeVault community support representative"
+                  alt="Pine Signal Lab community support representative"
                   className="h-72 w-auto object-contain object-bottom drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)] sm:h-80 md:h-96 lg:h-[28rem]"
                   data-testid="img-connect-support"
                 />
@@ -192,7 +192,7 @@ export default function Home() {
                   className="mt-3 max-w-md text-base text-zinc-400"
                   data-testid="text-connect-subtitle"
                 >
-                  Join thousands of traders in the TradeVault community. Get started today!
+                  Join thousands of traders in the Pine Signal Lab community. Get started today!
                 </p>
                 <div className="mt-6 flex flex-wrap items-center gap-3" data-testid="list-social">
                   {socialLinks.map((s) => (
@@ -253,7 +253,7 @@ function IndicatorMarquee() {
               Our Premium Indicators
             </h2>
             <p className="mt-2 max-w-xl text-sm text-zinc-400">
-              A live look at what's trending in the TradeVault catalog. Hover to pause.
+              A live look at what's trending in the Pine Signal Lab catalog. Hover to pause.
             </p>
           </div>
           <Link href="/indicators">
@@ -403,7 +403,7 @@ function SystemFramework() {
             Our System Framework
           </h2>
           <p className="mt-3 text-base text-zinc-400">
-            A disciplined four-stage process behind every TradeVault signal — from raw market structure to a high-probability trade plan.
+            A disciplined four-stage process behind every Pine Signal Lab signal — from raw market structure to a high-probability trade plan.
           </p>
         </motion.div>
 
@@ -727,7 +727,7 @@ const footerColumns = [
 const footerSocials = [
   { name: "Twitter", href: "https://x.com", icon: SiX },
   { name: "YouTube", href: "https://youtube.com", icon: SiYoutube },
-  { name: "Telegram", href: "https://t.me/tradevault", icon: SiTelegram },
+  { name: "Telegram", href: "https://t.me/pinesignallab", icon: SiTelegram },
   { name: "Instagram", href: "https://instagram.com", icon: SiInstagram },
 ];
 
@@ -750,7 +750,7 @@ function SiteFooter() {
     setSubmitting(true);
     toast({
       title: "You're on the list",
-      description: "We'll send the next TradeVault update straight to your inbox.",
+      description: "We'll send the next Pine Signal Lab update straight to your inbox.",
     });
     window.setTimeout(() => {
       setEmail("");
@@ -820,7 +820,7 @@ function SiteFooter() {
                 className="bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:bg-primary/90"
                 data-testid="button-final-cta"
               >
-                <Link href="/indicators" aria-label="Unlock all TradeVault indicators">
+                <Link href="/indicators" aria-label="Unlock all Pine Signal Lab indicators">
                   Unlock All Indicators <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
@@ -840,7 +840,7 @@ function SiteFooter() {
               <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/15 ring-1 ring-primary/30">
                 <TrendingUp className="h-4 w-4 text-primary" />
               </span>
-              <span className="text-lg font-bold text-white">TradeVault</span>
+              <span className="text-lg font-bold text-white">Pine Signal Lab</span>
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-zinc-400">
               Premium TradingView indicators for serious traders. Built with precision, tested for performance.
@@ -928,7 +928,7 @@ function SiteFooter() {
         <div className="border-t border-white/10 py-6">
           <div className="flex flex-col items-center justify-between gap-3 text-xs text-zinc-500 sm:flex-row">
             <p data-testid="text-footer-copyright">
-              © {year} TradeVault. All rights reserved.
+              © {year} Pine Signal Lab. All rights reserved.
             </p>
             <p className="text-center sm:text-right" data-testid="text-footer-disclaimer">
               Trading involves risk. Past performance is not indicative of future results.
@@ -1100,7 +1100,7 @@ function Testimonials() {
             Real Traders. Real Results.
           </h2>
           <p className="mt-2 max-w-xl text-sm text-zinc-400">
-            A glimpse into what TradeVault members say after putting our indicators on their charts.
+            A glimpse into what Pine Signal Lab members say after putting our indicators on their charts.
           </p>
         </motion.div>
       </div>
@@ -1167,7 +1167,7 @@ function KeyFeatures() {
             Built for traders who demand precision.
           </h2>
           <p className="mt-2 text-sm text-zinc-400 sm:text-base">
-            Why traders love TradeVault indicators.
+            Why traders love Pine Signal Lab indicators.
           </p>
         </motion.div>
 

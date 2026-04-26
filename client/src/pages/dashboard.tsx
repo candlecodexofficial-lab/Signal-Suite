@@ -31,7 +31,7 @@ function buildWhatsAppUrl(message: string): string {
   return `https://wa.me/${SUPPORT_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
-const WATCHLIST_KEY = "tradevault.watchlist";
+const WATCHLIST_KEY = "pinesignallab.watchlist";
 type DashView = "active" | "pending" | "orders" | "saved";
 
 function readWatchlistIds(): number[] {
@@ -299,7 +299,7 @@ export default function Dashboard() {
                         This request has been pending for over 24 hours. Reach out and we'll prioritize it.
                       </p>
                       <a
-                        href={buildWhatsAppUrl(`Hi TradeVault team, my order #${item.orderId} for "${item.indicatorName}" has been pending for over 24 hours. Please help.`)}
+                        href={buildWhatsAppUrl(`Hi Pine Signal Lab team, my order #${item.orderId} for "${item.indicatorName}" has been pending for over 24 hours. Please help.`)}
                         target="_blank"
                         rel="noopener noreferrer"
                         data-testid={`button-pending-support-${item.id}`}
@@ -442,7 +442,7 @@ export default function Dashboard() {
                             </div>
                           </div>
                           <a
-                            href={buildWhatsAppUrl(`Hi TradeVault team, my order #${order.id} was rejected. Could you help me understand why and how to proceed?`)}
+                            href={buildWhatsAppUrl(`Hi Pine Signal Lab team, my order #${order.id} was rejected. Could you help me understand why and how to proceed?`)}
                             target="_blank"
                             rel="noopener noreferrer"
                             data-testid={`button-rejected-support-${order.id}`}
@@ -465,7 +465,7 @@ export default function Dashboard() {
                             </p>
                           </div>
                           <a
-                            href={buildWhatsAppUrl(`Hi TradeVault team, my order #${order.id} has been pending for over 24 hours. Please help.`)}
+                            href={buildWhatsAppUrl(`Hi Pine Signal Lab team, my order #${order.id} has been pending for over 24 hours. Please help.`)}
                             target="_blank"
                             rel="noopener noreferrer"
                             data-testid={`button-order-pending-support-${order.id}`}
