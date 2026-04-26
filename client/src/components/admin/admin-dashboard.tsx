@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
@@ -6,26 +6,26 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
+} from "@/components/ui/sheet";
+import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
-  Search, CheckCircle2, XCircle, Clock, Mail, Phone, TrendingUp, Calendar, CreditCard,
-  Package, User as UserIcon, ExternalLink, ChevronRight, ChevronsRight, Users, X, ShieldCheck,
+  CheckCircle2, XCircle, Clock, Mail, Phone, TrendingUp, Calendar, CreditCard,
+  Package, User as UserIcon, ExternalLink, ChevronsRight, Users, X, ShieldCheck,
   Inbox, Download, Eye, ChevronDown, ChevronUp, Hourglass, AlertCircle, MoreHorizontal,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface AdminOrderItem {
   id: number; orderId: number; indicatorId: number; duration: number; price: string;
@@ -195,14 +195,10 @@ function downloadTodayRequestsCSV(requests: TodayRequest[]) {
   URL.revokeObjectURL(url);
 }
 
-type FilterTab = "all" | "active" | "pending" | "free";
-
 export function AdminDashboard() {
   const { toast } = useToast();
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<FilterTab>("all");
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [rejectOrder, setRejectOrder] = useState<{ id: number; userName: string } | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [expandedTodayItem, setExpandedTodayItem] = useState<number | null>(null);
@@ -240,35 +236,10 @@ export function AdminDashboard() {
     onError: (e: Error) => toast({ variant: "destructive", title: "Failed to reject", description: e.message }),
   });
 
-  const filteredUsers = useMemo(() => {
-    if (!users) return [];
-    const q = search.trim().toLowerCase();
-    return users.filter((u) => {
-      if (filter === "active" && !u.hasActivePlan) return false;
-      if (filter === "pending" && !u.orders.some((o) => o.status === "pending")) return false;
-      if (filter === "free" && u.planType !== "free") return false;
-      if (!q) return true;
-      return (
-        u.firstName.toLowerCase().includes(q) ||
-        u.lastName.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q) ||
-        u.username.toLowerCase().includes(q) ||
-        u.tradingViewUsername.toLowerCase().includes(q) ||
-        String(u.id).includes(q)
-      );
-    });
-  }, [users, search, filter]);
-
   const selectedUser = useMemo(
     () => users?.find((u) => u.id === selectedUserId) ?? null,
     [users, selectedUserId]
   );
-
-  useEffect(() => {
-    if (!users || users.length === 0 || selectedUserId !== null) return;
-    const withPending = users.find((u) => u.orders.some((o) => o.status === "pending"));
-    setSelectedUserId((withPending ?? users[0]).id);
-  }, [users, selectedUserId]);
 
   const totalUsers = users?.length || 0;
   const activeUsers = users?.filter((u) => u.hasActivePlan).length || 0;
@@ -326,214 +297,42 @@ export function AdminDashboard() {
         approvingId={approveMutation.variables ?? null}
       />
 
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Users table */}
-        <div className="flex flex-1 min-w-0 flex-col">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-background px-4 py-3 sm:px-6">
-            <div className="flex items-center gap-3">
-              <h2 className="text-sm font-semibold">Users</h2>
-              <Badge variant="outline" className="text-[10px]" data-testid="text-users-count">
-                {filteredUsers.length} of {totalUsers}
-              </Badge>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterTab)}>
-                <TabsList className="h-8">
-                  <TabsTrigger value="all" className="text-xs h-6 px-2.5" data-testid="tab-all">All</TabsTrigger>
-                  <TabsTrigger value="active" className="text-xs h-6 px-2.5" data-testid="tab-active">Active</TabsTrigger>
-                  <TabsTrigger value="pending" className="text-xs h-6 px-2.5" data-testid="tab-pending">
-                    Pending
-                    {pendingOrdersCount > 0 && (
-                      <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500/20 px-1 text-[10px] font-bold text-amber-700 dark:text-amber-300">
-                        {pendingOrdersCount}
-                      </span>
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger value="free" className="text-xs h-6 px-2.5" data-testid="tab-free">Free</TabsTrigger>
-                </TabsList>
-              </Tabs>
-              <div className="relative w-64">
-                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search users…"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="h-8 pl-8 text-sm"
-                  data-testid="input-search-users"
+      {/* Detail panel — opens from the right when "View" is clicked on a request */}
+      <Sheet open={panelOpen && !!selectedUser} onOpenChange={setPanelOpen}>
+        <SheetContent
+          side="right"
+          className="w-full max-w-[460px] p-0 sm:max-w-[460px]"
+          data-testid="detail-panel"
+        >
+          <div className="flex h-full flex-col">
+            <SheetHeader className="space-y-0 border-b px-4 py-3 text-left">
+              <div className="flex items-center gap-2 min-w-0">
+                <UserIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                <SheetTitle className="text-sm font-semibold truncate">
+                  {selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}` : "User Details"}
+                </SheetTitle>
+              </div>
+              <SheetDescription className="sr-only">
+                Selected user details, recent orders, and pending requests
+              </SheetDescription>
+            </SheetHeader>
+
+            <ScrollArea className="flex-1">
+              {selectedUser && (
+                <UserDetailContent
+                  user={selectedUser}
+                  onApprove={(id) => approveMutation.mutate(id)}
+                  onReject={(orderId) => {
+                    setRejectOrder({ id: orderId, userName: `${selectedUser.firstName} ${selectedUser.lastName}` });
+                    setRejectReason("");
+                  }}
+                  approving={approveMutation.isPending}
                 />
-              </div>
-              {!panelOpen && (
-                <Button
-                  variant="outline" size="sm"
-                  onClick={() => setPanelOpen(true)}
-                  className="h-8" data-testid="button-open-panel"
-                >
-                  Show Details
-                </Button>
               )}
-            </div>
+            </ScrollArea>
           </div>
-
-          <ScrollArea className="flex-1">
-            {isLoading ? (
-              <div className="space-y-2 p-4">
-                {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-14" />)}
-              </div>
-            ) : filteredUsers.length === 0 ? (
-              <div className="flex h-full min-h-64 flex-col items-center justify-center p-10 text-center" data-testid="empty-users">
-                <UserIcon className="h-10 w-10 text-muted-foreground" />
-                <p className="mt-3 text-sm text-muted-foreground">
-                  {users && users.length > 0 ? "No users match your filters." : "No users registered yet."}
-                </p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader className="sticky top-0 z-10 bg-background">
-                  <TableRow>
-                    <TableHead className="w-[260px]">User</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>TradingView</TableHead>
-                    <TableHead className="text-center">Plan</TableHead>
-                    <TableHead className="text-center">Days Left</TableHead>
-                    <TableHead className="text-right">Orders</TableHead>
-                    <TableHead className="text-right">Pending</TableHead>
-                    <TableHead className="text-right">Spent</TableHead>
-                    <TableHead>Joined</TableHead>
-                    <TableHead className="w-10"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((u) => {
-                    const plan = planBadge[u.planType];
-                    const pendingCount = u.orders.filter((o) => o.status === "pending").length;
-                    const isSelected = u.id === selectedUserId;
-                    return (
-                      <TableRow
-                        key={u.id}
-                        onClick={() => { setSelectedUserId(u.id); setPanelOpen(true); }}
-                        className={`cursor-pointer hover-elevate ${isSelected ? "bg-primary/5" : ""}`}
-                        data-testid={`row-user-${u.id}`}
-                      >
-                        <TableCell>
-                          <div className="flex items-center gap-2.5">
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                                {u.firstName.charAt(0).toUpperCase()}{u.lastName.charAt(0).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-sm font-semibold truncate" data-testid={`user-name-${u.id}`}>
-                                  {u.firstName} {u.lastName}
-                                </span>
-                                {u.isAdmin && <ShieldCheck className="h-3 w-3 shrink-0 text-primary" />}
-                              </div>
-                              <p className="text-xs text-muted-foreground truncate">@{u.username} · #{u.id}</p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="min-w-0">
-                            <p className="text-xs truncate" data-testid={`user-email-${u.id}`}>{u.email}</p>
-                            <p className="text-xs text-muted-foreground truncate">{u.mobileNumber}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-xs font-mono" data-testid={`user-tv-${u.id}`}>{u.tradingViewUsername}</span>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline" className={`text-[10px] ${plan.className}`} data-testid={`user-plan-${u.id}`}>
-                            {plan.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {u.hasActivePlan && u.daysRemaining !== null && u.daysRemaining > 0 ? (
-                            <span className="text-sm font-semibold" data-testid={`user-days-${u.id}`}>{u.daysRemaining}d</span>
-                          ) : u.planType === "free" ? (
-                            <span className="text-xs text-emerald-600 dark:text-emerald-400">Lifetime</span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span className="text-sm font-medium" data-testid={`user-orders-${u.id}`}>{u.totalOrders}</span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {pendingCount > 0 ? (
-                            <Badge variant="secondary" className="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20" data-testid={`user-pending-${u.id}`}>
-                              {pendingCount}
-                            </Badge>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">0</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span className="text-sm font-semibold" data-testid={`user-spent-${u.id}`}>{formatINR(u.totalSpent)}</span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-xs text-muted-foreground">{formatShortDate(u.createdAt)}</span>
-                        </TableCell>
-                        <TableCell>
-                          <ChevronRight className={`h-4 w-4 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            )}
-          </ScrollArea>
-        </div>
-
-        {/* Detail panel */}
-        <AnimatePresence initial={false}>
-          {panelOpen && (
-            <motion.div
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 460, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
-              className="border-l bg-background overflow-hidden shrink-0"
-              data-testid="detail-panel"
-            >
-              <div style={{ width: 460 }} className="flex h-full flex-col">
-                <div className="flex items-center justify-between border-b px-4 py-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <UserIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <h3 className="text-sm font-semibold truncate">
-                      {selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}` : "User Details"}
-                    </h3>
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-7 w-7"
-                    onClick={() => setPanelOpen(false)}
-                    data-testid="button-close-panel" aria-label="Collapse details panel">
-                    <ChevronsRight className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                <ScrollArea className="flex-1">
-                  {!selectedUser ? (
-                    <div className="flex h-full min-h-64 flex-col items-center justify-center p-10 text-center">
-                      <UserIcon className="h-10 w-10 text-muted-foreground" />
-                      <p className="mt-3 text-sm text-muted-foreground">Select a user from the list to view details.</p>
-                    </div>
-                  ) : (
-                    <UserDetailContent
-                      user={selectedUser}
-                      onApprove={(id) => approveMutation.mutate(id)}
-                      onReject={(orderId) => {
-                        setRejectOrder({ id: orderId, userName: `${selectedUser.firstName} ${selectedUser.lastName}` });
-                        setRejectReason("");
-                      }}
-                      approving={approveMutation.isPending}
-                    />
-                  )}
-                </ScrollArea>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+        </SheetContent>
+      </Sheet>
 
       <Dialog open={!!rejectOrder} onOpenChange={(open) => { if (!open) { setRejectOrder(null); setRejectReason(""); } }}>
         <DialogContent data-testid="dialog-reject">
