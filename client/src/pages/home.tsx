@@ -1,4 +1,4 @@
-import { ArrowRight, Shield, Zap, BarChart3, ChevronRight, Activity, Droplets, Target, BellRing, Check, Clock, Sparkles, Rocket, TrendingUp, Send } from "lucide-react";
+import { ArrowRight, Shield, Zap, BarChart3, ChevronRight, Activity, Droplets, Target, BellRing, Check, Clock, Sparkles, Rocket, TrendingUp, Send, Star, Quote, ShieldCheck } from "lucide-react";
 import { SiFacebook, SiX, SiYoutube, SiWhatsapp, SiTelegram, SiInstagram } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -105,6 +105,8 @@ export default function Home() {
       <SystemFramework />
 
       <IndicatorMarquee />
+
+      <Testimonials />
 
       <PricingPlans />
 
@@ -920,5 +922,200 @@ function SiteFooter() {
         </div>
       </div>
     </footer>
+  );
+}
+
+const testimonials = [
+  {
+    name: "Rahul K.",
+    initials: "RK",
+    role: "Full Time Trader",
+    rating: 5,
+    quote: "These indicators have completely changed the way I trade. Consistent results and solid risk management.",
+    pnl: "+₹2,45,300",
+    accent: "from-amber-400/30 to-amber-600/10",
+  },
+  {
+    name: "Ankit S.",
+    initials: "AS",
+    role: "Swing Trader",
+    rating: 5,
+    quote: "Finally found indicators that actually work in all market conditions. Highly recommended!",
+    pnl: "+₹1,78,450",
+    accent: "from-indigo-400/30 to-indigo-600/10",
+  },
+  {
+    name: "Meera T.",
+    initials: "MT",
+    role: "Option Trader",
+    rating: 5,
+    quote: "The accuracy and timing of signals are exceptional. Worth every penny!",
+    pnl: "+₹3,12,800",
+    accent: "from-emerald-400/30 to-emerald-600/10",
+  },
+  {
+    name: "Karan V.",
+    initials: "KV",
+    role: "Crypto Trader",
+    rating: 5,
+    quote: "Backtest results matched live performance. Rare to see this level of transparency in the space.",
+    pnl: "+₹4,02,100",
+    accent: "from-cyan-400/30 to-cyan-600/10",
+  },
+  {
+    name: "Priya N.",
+    initials: "PN",
+    role: "Day Trader",
+    rating: 5,
+    quote: "The risk management rules baked into these tools have saved my account more than once.",
+    pnl: "+₹1,52,900",
+    accent: "from-rose-400/30 to-rose-600/10",
+  },
+  {
+    name: "Sahil R.",
+    initials: "SR",
+    role: "Index Trader",
+    rating: 5,
+    quote: "Clear entries, clear exits, no noise. Exactly what a serious trader needs.",
+    pnl: "+₹2,87,650",
+    accent: "from-violet-400/30 to-violet-600/10",
+  },
+];
+
+type Testimonial = (typeof testimonials)[number];
+
+function TestimonialCard({ t }: { t: Testimonial }) {
+  return (
+    <div className="flex h-full w-[300px] shrink-0 flex-col rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-5 backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.06] sm:w-[340px]">
+      <Quote aria-hidden className="mb-3 h-4 w-4 text-primary/60" />
+      <div className="flex items-center gap-3">
+        <div className={`flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br ${t.accent} ring-1 ring-white/15`}>
+          <span className="text-sm font-semibold text-white">{t.initials}</span>
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-white" data-testid={`text-testimonial-name-${t.initials.toLowerCase()}`}>
+            {t.name}
+          </p>
+          <p className="truncate text-xs text-zinc-400">{t.role}</p>
+        </div>
+        <div className="ml-auto flex items-center gap-0.5">
+          {Array.from({ length: t.rating }).map((_, i) => (
+            <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+          ))}
+        </div>
+      </div>
+      <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-zinc-300">
+        {t.quote}
+      </p>
+      <div className="mt-4 flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/[0.08] px-3 py-2">
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-300">
+          <ShieldCheck className="h-3 w-3" />
+          PnL Verified
+        </span>
+        <span className="text-sm font-bold text-emerald-300">{t.pnl}</span>
+      </div>
+    </div>
+  );
+}
+
+function TestimonialRow({
+  items,
+  reverse,
+  durationSeconds,
+  testId,
+}: {
+  items: Testimonial[];
+  reverse?: boolean;
+  durationSeconds: number;
+  testId: string;
+}) {
+  const track = [...items, ...items];
+  return (
+    <div className="marquee-pause-on-hover overflow-hidden">
+      <div
+        className={`flex w-max gap-4 ${reverse ? "animate-marquee-x-reverse" : "animate-marquee-x"}`}
+        style={{ ["--marquee-duration" as string]: `${durationSeconds}s` }}
+        data-testid={testId}
+      >
+        {track.map((t, i) => {
+          const isClone = i >= items.length;
+          return (
+            <div
+              key={`${t.initials}-${i}`}
+              className="pr-1"
+              aria-hidden={isClone || undefined}
+              {...(isClone ? { inert: "" as unknown as boolean } : {})}
+            >
+              <TestimonialCard t={t} />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function Testimonials() {
+  const rowA = testimonials.slice(0, Math.ceil(testimonials.length / 2));
+  const rowB = testimonials.slice(Math.ceil(testimonials.length / 2));
+
+  return (
+    <section
+      className="relative overflow-hidden border-t border-white/5 bg-gradient-to-b from-zinc-950 via-black to-zinc-950 py-14 sm:py-16"
+      data-testid="section-testimonials"
+    >
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+      <div className="pointer-events-none absolute -top-20 left-1/2 h-56 w-[36rem] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.5 }}
+          className="flex flex-col items-center text-center"
+        >
+          <Badge variant="secondary" className="mb-3 border-primary/20 bg-primary/10 text-primary" data-testid="badge-testimonials">
+            Loved by traders
+          </Badge>
+          <h2
+            className="text-2xl font-bold tracking-tight text-white sm:text-3xl"
+            data-testid="text-testimonials-title"
+          >
+            Real Traders. Real Results.
+          </h2>
+          <p className="mt-2 max-w-xl text-sm text-zinc-400">
+            A glimpse into what TradeVault members say after putting our indicators on their charts.
+          </p>
+        </motion.div>
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.6, delay: 0.15 }}
+        className="relative mt-10"
+      >
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-zinc-950 to-transparent sm:w-20" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-zinc-950 to-transparent sm:w-20" />
+
+        <TestimonialRow items={rowA} durationSeconds={48} testId="testimonials-row-a" />
+        <div className="h-4" />
+        <TestimonialRow items={rowB} reverse durationSeconds={56} testId="testimonials-row-b" />
+      </motion.div>
+
+      <div className="relative mx-auto mt-8 flex items-center justify-center gap-2" aria-hidden data-testid="testimonials-indicators">
+        {[0, 1, 2].map((i) => (
+          <motion.span
+            key={i}
+            className="h-1.5 rounded-full bg-primary/70"
+            initial={{ width: 6, opacity: 0.5 }}
+            animate={{ width: [6, 22, 6], opacity: [0.4, 1, 0.4] }}
+            transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut", delay: i * 0.4 }}
+          />
+        ))}
+      </div>
+    </section>
   );
 }

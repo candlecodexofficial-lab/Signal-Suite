@@ -206,8 +206,14 @@
     animation: marquee-x var(--marquee-duration, 60s) linear infinite;
     will-change: transform;
   }
+  .animate-marquee-x-reverse {
+    animation: marquee-x var(--marquee-duration, 60s) linear infinite reverse;
+    will-change: transform;
+  }
   .marquee-pause-on-hover:hover .animate-marquee-x,
-  .marquee-pause-on-hover:focus-within .animate-marquee-x {
+  .marquee-pause-on-hover:focus-within .animate-marquee-x,
+  .marquee-pause-on-hover:hover .animate-marquee-x-reverse,
+  .marquee-pause-on-hover:focus-within .animate-marquee-x-reverse {
     animation-play-state: paused;
   }
 
