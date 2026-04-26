@@ -12,6 +12,15 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Package,
   Clock,
@@ -29,9 +38,7 @@ import {
   ShoppingBag,
   Radio,
   Save,
-  Mail,
-  AtSign,
-  Lock,
+  HelpCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { z } from "zod";
@@ -243,34 +250,41 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
-          <aside>
-            <nav className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible" aria-label="Dashboard sections">
-              {sectionNav.map((s) => {
-                const active = section === s.key;
-                return (
-                  <button
-                    key={s.key}
-                    type="button"
-                    onClick={() => setSection(s.key)}
-                    aria-pressed={active}
-                    className={`flex w-full shrink-0 items-center gap-3 rounded-lg border p-3 text-left transition-all hover-elevate ${
-                      active ? "border-primary/60 bg-primary/[0.06] ring-1 ring-primary/40" : "border-card-border bg-card"
+        <div className="space-y-6">
+          <nav
+            className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+            aria-label="Dashboard sections"
+          >
+            {sectionNav.map((s) => {
+              const active = section === s.key;
+              return (
+                <button
+                  key={s.key}
+                  type="button"
+                  onClick={() => setSection(s.key)}
+                  aria-pressed={active}
+                  className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-left transition-all hover-elevate ${
+                    active
+                      ? "border-primary/60 bg-primary/[0.06] ring-1 ring-primary/40"
+                      : "border-card-border bg-card"
+                  }`}
+                  data-testid={s.testId}
+                >
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md ${
+                      active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
                     }`}
-                    data-testid={s.testId}
                   >
-                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
-                      <s.Icon className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className={`text-sm font-semibold ${active ? "text-foreground" : "text-foreground"}`}>{s.label}</p>
-                      <p className="text-xs text-muted-foreground">{s.description}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </nav>
-          </aside>
+                    <s.Icon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold tracking-tight">{s.label}</p>
+                    <p className="text-xs text-muted-foreground">{s.description}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </nav>
 
           <div className="min-w-0">
             {section === "account" && (
@@ -318,28 +332,12 @@ export default function Dashboard() {
 
                       <div className="grid gap-5 sm:grid-cols-2">
                         <FormItem>
-                          <FormLabel className="flex items-center gap-1.5 text-muted-foreground">
-                            <AtSign className="h-3.5 w-3.5" /> Username
-                            <Lock className="ml-1 h-3 w-3" />
-                          </FormLabel>
-                          <FormControl>
-                            <Input value={user.username} readOnly disabled data-testid="input-username-readonly" />
-                          </FormControl>
-                          <p className="text-xs text-muted-foreground">Username cannot be changed.</p>
-                        </FormItem>
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-1.5 text-muted-foreground">
-                            <Mail className="h-3.5 w-3.5" /> Email
-                            <Lock className="ml-1 h-3 w-3" />
-                          </FormLabel>
+                          <FormLabel>Email</FormLabel>
                           <FormControl>
                             <Input value={user.email} readOnly disabled data-testid="input-email-readonly" />
                           </FormControl>
-                          <p className="text-xs text-muted-foreground">Email is verified at signup and locked.</p>
+                          <p className="text-xs text-muted-foreground">Email is locked after signup.</p>
                         </FormItem>
-                      </div>
-
-                      <div className="grid gap-5 sm:grid-cols-2">
                         <FormField
                           control={accountForm.control}
                           name="mobileNumber"
@@ -353,12 +351,17 @@ export default function Dashboard() {
                             </FormItem>
                           )}
                         />
+                      </div>
+
+                      <Separator className="my-2" />
+
+                      <div className="grid gap-5 sm:grid-cols-2">
                         <FormField
                           control={accountForm.control}
                           name="tradingViewUsername"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>TradingView Username</FormLabel>
+                              <FormLabel>TradingView User Name</FormLabel>
                               <FormControl>
                                 <Input placeholder="Your TradingView handle" data-testid="input-tradingview-username" {...field} />
                               </FormControl>
@@ -368,30 +371,57 @@ export default function Dashboard() {
                         />
                       </div>
 
-                      <div className="flex items-center justify-end gap-3 pt-2">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          onClick={() =>
-                            accountForm.reset({
-                              firstName: user.firstName ?? "",
-                              lastName: user.lastName ?? "",
-                              mobileNumber: user.mobileNumber ?? "",
-                              tradingViewUsername: user.tradingViewUsername ?? "",
-                            })
-                          }
-                          disabled={savingProfile || !accountForm.formState.isDirty}
-                          data-testid="button-reset-profile"
-                        >
-                          Reset
-                        </Button>
+                      <div className="flex flex-wrap items-end justify-between gap-4">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-1.5 text-left text-sm text-primary underline-offset-4 hover:underline"
+                              data-testid="button-tv-username-help"
+                            >
+                              <HelpCircle className="h-4 w-4" />
+                              I don't know my TradingView user name
+                            </button>
+                          </DialogTrigger>
+                          <DialogContent data-testid="dialog-tv-username-help">
+                            <DialogHeader>
+                              <DialogTitle>How to find your TradingView username</DialogTitle>
+                              <DialogDescription>
+                                Follow these steps on tradingview.com to copy your exact username.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <ol className="list-decimal space-y-2 pl-5 text-sm text-foreground">
+                              <li>
+                                Open <span className="font-medium">tradingview.com</span> and sign in to your account.
+                              </li>
+                              <li>
+                                Click your profile avatar at the top-right corner.
+                              </li>
+                              <li>
+                                Choose <span className="font-medium">Profile</span> from the dropdown.
+                              </li>
+                              <li>
+                                Your username appears just below your display name (it starts with the URL{" "}
+                                <span className="font-mono text-xs">tradingview.com/u/&lt;username&gt;</span>).
+                              </li>
+                              <li>
+                                Copy that username exactly (case-sensitive) and paste it into the field.
+                              </li>
+                            </ol>
+                            <p className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
+                              Tip: Without the correct username we cannot grant you indicator access on TradingView.
+                            </p>
+                          </DialogContent>
+                        </Dialog>
+
                         <Button
                           type="submit"
                           disabled={savingProfile || !accountForm.formState.isDirty}
+                          className="bg-rose-500 text-white hover:bg-rose-600 disabled:opacity-60"
                           data-testid="button-save-profile"
                         >
                           <Save className="mr-2 h-4 w-4" />
-                          {savingProfile ? "Saving..." : "Save Changes"}
+                          {savingProfile ? "Saving..." : "Edit or Save New Change"}
                         </Button>
                       </div>
                     </form>
