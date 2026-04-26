@@ -1,4 +1,4 @@
-import { ArrowRight, Shield, Zap, BarChart3, ChevronRight, Activity, Droplets, Target, BellRing } from "lucide-react";
+import { ArrowRight, Shield, Zap, BarChart3, ChevronRight, Activity, Droplets, Target, BellRing, Check, Clock, Sparkles } from "lucide-react";
 import { SiFacebook, SiX, SiYoutube, SiWhatsapp, SiTelegram, SiInstagram } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -102,6 +102,8 @@ export default function Home() {
       <SystemFramework />
 
       <IndicatorMarquee />
+
+      <PricingPlans />
 
       <section className="border-t">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
@@ -478,6 +480,211 @@ function SystemFramework() {
             })}
           </ol>
         </div>
+      </div>
+    </section>
+  );
+}
+
+const pricingPlans = [
+  {
+    name: "Starter",
+    price: 999,
+    description: "Get started with a single premium tool.",
+    features: [
+      { icon: Check, label: "1 Premium Indicator" },
+      { icon: Check, label: "Access to Live Signals" },
+      { icon: Check, label: "Basic Support" },
+      { icon: Clock, label: "Cancel Anytime" },
+    ],
+    popular: false,
+    cta: "Start Now",
+  },
+  {
+    name: "Pro",
+    price: 2499,
+    description: "Everything serious traders need, day in and day out.",
+    features: [
+      { icon: Check, label: "All Premium Indicators" },
+      { icon: Check, label: "Real-time Signals" },
+      { icon: Check, label: "Priority Support" },
+      { icon: Check, label: "Cancel Anytime" },
+    ],
+    popular: true,
+    cta: "Start Now",
+  },
+  {
+    name: "Elite",
+    price: 4999,
+    description: "White-glove access for funded and full-time traders.",
+    features: [
+      { icon: Check, label: "All Pro Features" },
+      { icon: Check, label: "Private Telegram Channel" },
+      { icon: Check, label: "Advanced Analytics" },
+      { icon: Check, label: "1-on-1 Support" },
+    ],
+    popular: false,
+    cta: "Start Now",
+  },
+];
+
+function PricingPlans() {
+  return (
+    <section
+      className="relative overflow-hidden border-t border-white/5 bg-gradient-to-b from-zinc-950 via-zinc-950 to-black py-20 sm:py-24"
+      data-testid="section-pricing"
+    >
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.06]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.6) 1px, transparent 1px)",
+          backgroundSize: "56px 56px",
+          maskImage:
+            "radial-gradient(ellipse at center, black 25%, transparent 75%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse at center, black 25%, transparent 75%)",
+        }}
+      />
+      <div className="pointer-events-none absolute -top-24 left-1/2 h-80 w-[44rem] -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
+
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.5 }}
+          className="mx-auto max-w-2xl text-center"
+        >
+          <Badge variant="secondary" className="mb-3 border-primary/20 bg-primary/10 text-primary" data-testid="badge-pricing">
+            Pricing
+          </Badge>
+          <h2
+            className="text-3xl font-bold tracking-tight text-white sm:text-4xl"
+            data-testid="text-pricing-title"
+          >
+            Choose Your Plan
+          </h2>
+          <p className="mt-3 text-base text-zinc-400">
+            Simple, transparent pricing. Upgrade, downgrade, or cancel any time — no questions asked.
+          </p>
+        </motion.div>
+
+        <div className="mt-14 grid grid-cols-1 items-stretch gap-6 md:grid-cols-3 md:gap-5 lg:gap-6">
+          {pricingPlans.map((plan, i) => {
+            const isPopular = plan.popular;
+            return (
+              <motion.div
+                key={plan.name}
+                initial={{ opacity: 0, y: 28 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-80px" }}
+                transition={{ duration: 0.55, delay: 0.12 + i * 0.12, ease: "easeOut" }}
+                className={`relative ${isPopular ? "md:-my-3 md:scale-[1.03]" : ""}`}
+                data-testid={`pricing-card-${plan.name.toLowerCase()}`}
+              >
+                {isPopular && (
+                  <div className="absolute -top-3 left-1/2 z-20 -translate-x-1/2">
+                    <div className="flex items-center gap-1.5 rounded-full border border-primary/40 bg-zinc-950 px-3 py-1 text-xs font-semibold text-primary shadow-[0_0_24px_-4px_hsl(var(--primary)/0.55)]">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Most Popular
+                    </div>
+                  </div>
+                )}
+
+                <div
+                  className={`group relative flex h-full flex-col overflow-hidden rounded-2xl border p-7 transition-all duration-300 ${
+                    isPopular
+                      ? "border-primary/50 bg-gradient-to-b from-primary/[0.08] via-zinc-900 to-zinc-950 shadow-[0_0_60px_-15px_hsl(var(--primary)/0.5)] hover:shadow-[0_0_80px_-15px_hsl(var(--primary)/0.65)]"
+                      : "border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.05]"
+                  }`}
+                >
+                  <div
+                    className={`pointer-events-none absolute inset-x-7 -top-px h-px ${
+                      isPopular
+                        ? "bg-gradient-to-r from-transparent via-primary to-transparent opacity-80"
+                        : "bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-50"
+                    }`}
+                  />
+
+                  <div className="mb-5">
+                    <h3
+                      className={`text-xl font-semibold ${isPopular ? "text-primary" : "text-white"}`}
+                      data-testid={`text-plan-name-${plan.name.toLowerCase()}`}
+                    >
+                      {plan.name}
+                    </h3>
+                    <p className="mt-1 text-sm text-zinc-400">{plan.description}</p>
+                  </div>
+
+                  <div className="mb-6 flex items-baseline gap-1">
+                    <span
+                      className="text-5xl font-bold tracking-tight text-white"
+                      data-testid={`text-plan-price-${plan.name.toLowerCase()}`}
+                    >
+                      <span className="text-3xl align-top mr-0.5 text-zinc-300">₹</span>
+                      {plan.price.toLocaleString("en-IN")}
+                    </span>
+                    <span className="text-sm font-medium text-zinc-400">/month</span>
+                  </div>
+
+                  <ul className="mb-8 space-y-3">
+                    {plan.features.map((f, fi) => {
+                      const FIcon = f.icon;
+                      return (
+                        <li
+                          key={f.label}
+                          className="flex items-start gap-3 text-sm text-zinc-200"
+                          data-testid={`feature-${plan.name.toLowerCase()}-${fi}`}
+                        >
+                          <span
+                            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                              isPopular
+                                ? "bg-primary/15 text-primary"
+                                : "bg-white/5 text-zinc-300"
+                            }`}
+                          >
+                            <FIcon className="h-3.5 w-3.5" strokeWidth={2.6} />
+                          </span>
+                          <span>{f.label}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+
+                  <div className="mt-auto">
+                    <Button
+                      asChild
+                      size="lg"
+                      className={`w-full ${
+                        isPopular
+                          ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/30"
+                          : "bg-white/5 text-white hover:bg-white/10 border border-white/15"
+                      }`}
+                      data-testid={`button-plan-${plan.name.toLowerCase()}`}
+                    >
+                      <Link href="/indicators" aria-label={`${plan.cta} with the ${plan.name} plan`}>
+                        {plan.cta}
+                      </Link>
+                    </Button>
+                  </div>
+
+                  <div
+                    className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                    style={{
+                      background:
+                        "radial-gradient(60% 50% at 50% 0%, rgba(255,255,255,0.06), transparent 60%)",
+                    }}
+                  />
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        <p className="mt-8 text-center text-xs text-zinc-500">
+          All prices in INR. Taxes may apply. Cancel anytime from your account.
+        </p>
       </div>
     </section>
   );
