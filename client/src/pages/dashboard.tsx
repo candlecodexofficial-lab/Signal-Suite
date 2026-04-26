@@ -45,6 +45,11 @@ import {
   Hourglass,
   AlertTriangle,
   LifeBuoy,
+  RefreshCcw,
+  Receipt,
+  CalendarDays,
+  CalendarClock,
+  IndianRupee,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { z } from "zod";
@@ -228,6 +233,7 @@ export default function Dashboard() {
   const activeIndicators = allItems.filter((i) => i.accessStatus === "active");
   const pendingItems = allItems.filter((i) => i.accessStatus === "pending" || i.accessStatus === "rejected");
   const totalOrders = orders?.length || 0;
+  const totalSpent = orders?.reduce((sum, o) => sum + (parseFloat(o.totalAmount) || 0), 0) || 0;
   const savedIndicators = (allIndicators || []).filter((ind) => watchlistIds.includes(ind.id));
 
   const stats: { key: DashView; label: string; count: number; Icon: typeof TrendingUp; iconWrap: string; iconColor: string; testId: string }[] = [
@@ -920,7 +926,15 @@ export default function Dashboard() {
 
                 {view === "orders" && (
                   <div>
-                    <h2 className="text-lg font-semibold mb-4" data-testid="text-orders-heading">Order History</h2>
+                    <div className="mb-4 flex items-end justify-between gap-3">
+                      <h2 className="text-lg font-semibold" data-testid="text-orders-heading">Order History</h2>
+                      {orders && orders.length > 0 && (
+                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Receipt className="h-3.5 w-3.5" />
+                          {orders.length} order{orders.length !== 1 ? "s" : ""} · ₹{totalSpent.toLocaleString("en-IN", { maximumFractionDigits: 0 })} lifetime spend
+                        </span>
+                      )}
+                    </div>
 
                     {isLoading ? (
                       <div className="space-y-4">
@@ -944,42 +958,65 @@ export default function Dashboard() {
                       </Card>
                     ) : (
                       <div className="space-y-4">
-                        {orders.map((order) => {
+                        {orders.map((order, orderIdx) => {
                           const config = statusConfig[order.status] || statusConfig.pending;
                           const StatusIcon = config.icon;
-                          const orderDate = new Date(order.createdAt).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          });
+                          const orderCreated = new Date(order.createdAt);
+                          const orderDateStr = orderCreated.toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" });
+                          const orderTimeStr = orderCreated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+                          const isStalePending = order.status === "pending" && now - orderCreated.getTime() > PENDING_SUPPORT_THRESHOLD_MS;
+
+                          let headerAccent = "from-muted/40 to-muted/20";
+                          let headerBorder = "border-l-card-border";
+                          if (order.status === "approved") {
+                            headerAccent = "from-emerald-500/10 to-cyan-500/5";
+                            headerBorder = "border-l-emerald-500";
+                          } else if (order.status === "rejected") {
+                            headerAccent = "from-rose-500/10 to-orange-500/5";
+                            headerBorder = "border-l-rose-500";
+                          } else if (order.status === "pending") {
+                            headerAccent = isStalePending ? "from-amber-500/10 to-orange-500/5" : "from-cyan-500/10 to-blue-500/5";
+                            headerBorder = isStalePending ? "border-l-amber-500" : "border-l-cyan-500";
+                          }
 
                           return (
-                            <Card key={order.id} className="border-card-border overflow-hidden" data-testid={`order-${order.id}`}>
-                              <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-muted/30 px-5 py-3">
+                            <Card
+                              key={order.id}
+                              className={`overflow-hidden border-card-border border-l-4 ${headerBorder}`}
+                              data-testid={`order-${order.id}`}
+                            >
+                              <div className={`flex flex-wrap items-center justify-between gap-3 border-b bg-gradient-to-r ${headerAccent} px-5 py-3`}>
                                 <div className="flex items-center gap-3">
-                                  <span className="text-sm font-semibold" data-testid={`order-id-${order.id}`}>
-                                    Order #{order.id}
-                                  </span>
+                                  <div className="flex items-center gap-1.5">
+                                    <Receipt className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm font-bold" data-testid={`order-id-${order.id}`}>
+                                      Order #{order.id}
+                                    </span>
+                                  </div>
                                   <Badge variant={config.variant} className="text-xs" data-testid={`order-status-${order.id}`}>
                                     <StatusIcon className="mr-1 h-3 w-3" />
                                     {config.label}
                                   </Badge>
                                 </div>
-                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                  <span data-testid={`order-date-${order.id}`}>{orderDate}</span>
-                                  <span className="font-medium text-foreground" data-testid={`order-total-${order.id}`}>
-                                    ${parseFloat(order.totalAmount).toFixed(2)}
+                                <div className="flex items-center gap-4 text-sm">
+                                  <span className="flex items-center gap-1 text-muted-foreground" data-testid={`order-date-${order.id}`}>
+                                    <CalendarDays className="h-3.5 w-3.5" />
+                                    {orderDateStr} · {orderTimeStr}
+                                  </span>
+                                  <span className="flex items-center font-bold text-foreground" data-testid={`order-total-${order.id}`}>
+                                    <IndianRupee className="h-3.5 w-3.5" />
+                                    {parseFloat(order.totalAmount).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
                                   </span>
                                 </div>
                               </div>
 
                               {order.status === "rejected" && (
-                                <div className="border-b bg-red-500/5 px-5 py-3" data-testid={`rejection-reason-${order.id}`}>
+                                <div className="border-b border-rose-500/20 bg-rose-500/5 px-5 py-3" data-testid={`rejection-reason-${order.id}`}>
                                   <div className="flex flex-wrap items-start justify-between gap-3">
                                     <div className="flex items-start gap-2 min-w-0">
-                                      <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
+                                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
                                       <div className="min-w-0">
-                                        <p className="text-xs font-semibold text-red-600 dark:text-red-400">
+                                        <p className="text-xs font-semibold text-rose-600 dark:text-rose-400">
                                           {order.rejectionReason ? "Reason for rejection" : "Order rejected"}
                                         </p>
                                         {order.rejectionReason && (
@@ -993,19 +1030,19 @@ export default function Dashboard() {
                                       rel="noopener noreferrer"
                                       data-testid={`button-rejected-support-${order.id}`}
                                     >
-                                      <Button size="sm" variant="outline" className="h-7 gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:text-emerald-700 dark:text-emerald-300 dark:hover:text-emerald-300">
-                                        <MessageCircle className="h-3.5 w-3.5" /> Contact Support Team
+                                      <Button size="sm" className="h-7 gap-1 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700">
+                                        <LifeBuoy className="h-3.5 w-3.5" /> Quick Support
                                       </Button>
                                     </a>
                                   </div>
                                 </div>
                               )}
 
-                              {order.status === "pending" && Date.now() - new Date(order.createdAt).getTime() > PENDING_SUPPORT_THRESHOLD_MS && (
-                                <div className="border-b bg-amber-500/5 px-5 py-3" data-testid={`pending-stale-${order.id}`}>
+                              {isStalePending && (
+                                <div className="border-b border-amber-500/20 bg-amber-500/5 px-5 py-3" data-testid={`pending-stale-${order.id}`}>
                                   <div className="flex flex-wrap items-center justify-between gap-3">
                                     <div className="flex items-start gap-2">
-                                      <Clock className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                                      <Hourglass className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
                                       <p className="text-xs text-amber-700 dark:text-amber-300">
                                         Pending for over 24 hours. Reach out and we'll prioritize it.
                                       </p>
@@ -1016,8 +1053,8 @@ export default function Dashboard() {
                                       rel="noopener noreferrer"
                                       data-testid={`button-order-pending-support-${order.id}`}
                                     >
-                                      <Button size="sm" variant="outline" className="h-7 gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:text-emerald-700 dark:text-emerald-300 dark:hover:text-emerald-300">
-                                        <MessageCircle className="h-3.5 w-3.5" /> Contact Support Team
+                                      <Button size="sm" className="h-7 gap-1 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700">
+                                        <LifeBuoy className="h-3.5 w-3.5" /> Quick Support
                                       </Button>
                                     </a>
                                   </div>
@@ -1025,35 +1062,138 @@ export default function Dashboard() {
                               )}
 
                               <div className="divide-y">
-                                {order.items.map((item) => {
-                                  const accessBadge = getAccessBadge(item.accessStatus);
+                                {order.items.map((item, itemIdx) => {
+                                  const isLifetime = item.daysRemaining === null && item.accessStatus === "active";
+                                  const startDate = order.approvedAt ? new Date(order.approvedAt) : null;
+                                  const startDateStr = startDate
+                                    ? startDate.toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
+                                    : "—";
+                                  const planLabel = item.isTrial ? "15-Day Trial" : `${item.duration} Month Plan`;
+                                  const itemPrice = parseFloat(item.price) || 0;
+                                  const itemNumber = orderIdx === 0 && itemIdx === 0
+                                    ? itemIdx + 1
+                                    : orders.slice(0, orderIdx).reduce((acc, o) => acc + o.items.length, 0) + itemIdx + 1;
+
+                                  let nameColor = "text-foreground";
+                                  if (item.accessStatus === "active") nameColor = "text-emerald-700 dark:text-emerald-400";
+                                  else if (item.accessStatus === "rejected") nameColor = "text-rose-600 dark:text-rose-400";
+                                  else if (item.accessStatus === "expired") nameColor = "text-muted-foreground";
+                                  else if (item.accessStatus === "pending") nameColor = "text-cyan-700 dark:text-cyan-400";
+
                                   return (
-                                    <div key={item.id} className="flex items-center justify-between gap-3 px-5 py-3" data-testid={`order-item-${item.id}`}>
-                                      <div className="min-w-0 flex-1">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                          <Link href={`/indicator/${item.indicatorSlug}`} className="text-sm font-medium hover:underline" data-testid={`link-order-item-${item.id}`}>
+                                    <div
+                                      key={item.id}
+                                      className="grid items-center gap-4 px-5 py-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]"
+                                      data-testid={`order-item-${item.id}`}
+                                    >
+                                      <div className="min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <span className="text-sm font-bold text-muted-foreground">{itemNumber}.</span>
+                                          <Link
+                                            href={`/indicator/${item.indicatorSlug}`}
+                                            className={`text-sm font-semibold hover:underline truncate ${nameColor}`}
+                                            data-testid={`link-order-item-${item.id}`}
+                                          >
                                             {item.indicatorName}
                                           </Link>
-                                          {order.status === "approved" && (
-                                            <Badge variant="outline" className={`text-xs ${accessBadge.className}`}>
-                                              {accessBadge.label}
-                                            </Badge>
-                                          )}
                                         </div>
-                                        <p className="mt-0.5 text-xs text-muted-foreground">
-                                          {item.isTrial ? "15-Day Trial" : `${item.duration} month${item.duration !== 1 ? "s" : ""}`}
-                                          {" · "}
-                                          {item.indicatorCategory}
+                                        <Badge
+                                          variant="outline"
+                                          className={`mt-1 text-[10px] uppercase tracking-wide ${
+                                            item.version === "strategy"
+                                              ? "border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400"
+                                              : "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                          }`}
+                                        >
+                                          {item.version === "strategy" ? "Strategy" : "Indicator"}
+                                        </Badge>
+                                      </div>
+
+                                      <div className="space-y-0.5">
+                                        <p className="text-sm font-semibold text-foreground" data-testid={`text-plan-${item.id}`}>
+                                          {planLabel}
+                                        </p>
+                                        <p className="flex items-center text-xs text-muted-foreground" data-testid={`text-paid-${item.id}`}>
+                                          Paid <IndianRupee className="ml-1 h-3 w-3" />
+                                          {itemPrice.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
                                         </p>
                                       </div>
-                                      <div className="text-right shrink-0">
-                                        {item.isTrial ? (
-                                          <span className="text-sm font-medium text-primary">₹5,250</span>
+
+                                      <div className="space-y-0.5 text-xs">
+                                        <p className="flex items-center gap-1 text-muted-foreground">
+                                          <CalendarDays className="h-3 w-3" />
+                                          <span className="font-medium text-foreground">Buying:</span>
+                                          <span data-testid={`text-buying-${item.id}`}>{orderDateStr}</span>
+                                        </p>
+                                        <p className="flex items-center gap-1 text-muted-foreground">
+                                          <CalendarClock className="h-3 w-3" />
+                                          <span className="font-medium text-foreground">Start:</span>
+                                          <span data-testid={`text-start-${item.id}`}>{startDateStr}</span>
+                                        </p>
+                                      </div>
+
+                                      <div className="flex flex-col items-start gap-1">
+                                        {item.accessStatus === "active" ? (
+                                          isLifetime ? (
+                                            <>
+                                              <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 px-2.5 py-0.5 text-[11px] font-semibold text-white">
+                                                <InfinityIcon className="h-3 w-3" /> Lifetime
+                                              </span>
+                                              <span className="text-[10px] text-muted-foreground">Never expires</span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 px-2.5 py-0.5 text-[11px] font-semibold text-white">
+                                                <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" /> Active
+                                              </span>
+                                              <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400" data-testid={`text-days-left-${item.id}`}>
+                                                {item.daysRemaining} day{item.daysRemaining !== 1 ? "s" : ""} left
+                                              </span>
+                                            </>
+                                          )
+                                        ) : item.accessStatus === "expired" ? (
+                                          <>
+                                            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                                              <XCircle className="h-3 w-3" /> Expired
+                                            </span>
+                                            <span className="text-[10px] text-muted-foreground">Renew to continue</span>
+                                          </>
+                                        ) : item.accessStatus === "rejected" ? (
+                                          <>
+                                            <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-rose-500 to-orange-500 px-2.5 py-0.5 text-[11px] font-semibold text-white">
+                                              <AlertTriangle className="h-3 w-3" /> Rejected
+                                            </span>
+                                            <span className="text-[10px] text-rose-600 dark:text-rose-400">Action needed</span>
+                                          </>
                                         ) : (
-                                          <span className="text-sm font-medium">₹{parseFloat(item.price).toLocaleString("en-IN")}</span>
+                                          <>
+                                            <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 px-2.5 py-0.5 text-[11px] font-semibold text-white">
+                                              <Hourglass className="h-3 w-3" /> Under Process
+                                            </span>
+                                            <span className="text-[10px] text-cyan-700 dark:text-cyan-400">Within 24 hours</span>
+                                          </>
                                         )}
-                                        {item.accessStatus === "active" && item.daysRemaining !== null && (
-                                          <p className="text-xs text-muted-foreground">{item.daysRemaining}d remaining</p>
+                                      </div>
+
+                                      <div className="flex justify-start lg:justify-end">
+                                        {item.accessStatus === "expired" ? (
+                                          <Link href={`/indicator/${item.indicatorSlug}`} data-testid={`button-renew-${item.id}`}>
+                                            <Button size="sm" className="gap-1.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700">
+                                              <RefreshCcw className="h-3.5 w-3.5" /> Renew
+                                            </Button>
+                                          </Link>
+                                        ) : item.accessStatus === "active" ? (
+                                          <Link href={`/indicator/${item.indicatorSlug}`} data-testid={`button-view-${item.id}`}>
+                                            <Button size="sm" variant="outline" className="gap-1.5">
+                                              View <ArrowRight className="h-3.5 w-3.5" />
+                                            </Button>
+                                          </Link>
+                                        ) : (
+                                          <Link href={`/indicator/${item.indicatorSlug}`} data-testid={`button-details-${item.id}`}>
+                                            <Button size="sm" variant="ghost" className="gap-1.5 text-muted-foreground">
+                                              Details <ArrowRight className="h-3.5 w-3.5" />
+                                            </Button>
+                                          </Link>
                                         )}
                                       </div>
                                     </div>
