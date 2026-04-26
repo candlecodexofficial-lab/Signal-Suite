@@ -18,6 +18,9 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useCart, computeStrategyPrice, computeBothPrice, computeVersionPrice, computeTrialPrice, VERSION_LABELS, type ProductVersion } from "@/components/cart-provider";
+import { useAuth } from "@/components/auth-provider";
+import { AdminIndicatorActions } from "@/components/admin/admin-indicator-controls";
+import { useLocation } from "wouter";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
@@ -154,6 +157,9 @@ export default function IndicatorDetail() {
   const params = useParams<{ slug: string }>();
   const { addItem, addTrial, isInCart, getCartItem, cartVersion, canAddVersion } = useCart();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isAdmin = !!user?.isAdmin;
+  const [, setLocation] = useLocation();
   const [selectedVersion, setSelectedVersion] = useState<ProductVersion>("indicator");
   const [activeTab, setActiveTab] = useState("overview");
   const [watchlist, setWatchlist] = useState<number[]>(() => readWatchlist());
@@ -304,6 +310,15 @@ export default function IndicatorDetail() {
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        {isAdmin && (
+          <div className="mb-4">
+            <AdminIndicatorActions
+              indicator={indicator}
+              variant="toolbar"
+              onDeleted={() => setLocation("/indicators")}
+            />
+          </div>
+        )}
         {/* Breadcrumb */}
         <nav className="mb-5 flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="breadcrumb">
           <Link href="/indicators">

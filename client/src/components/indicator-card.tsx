@@ -22,7 +22,13 @@ function readWatchlistIds(): number[] {
   }
 }
 
-export function IndicatorCard({ indicator }: { indicator: Indicator }) {
+export function IndicatorCard({
+  indicator,
+  adminOverlay,
+}: {
+  indicator: Indicator;
+  adminOverlay?: React.ReactNode;
+}) {
   const { isInCart, getCartItem, canAddVersion } = useCart();
   const { toast } = useToast();
   const inCart = isInCart(indicator.id);
@@ -107,6 +113,7 @@ export function IndicatorCard({ indicator }: { indicator: Indicator }) {
         }`}
         data-testid={`card-indicator-${indicator.id}`}
       >
+        {adminOverlay}
         <AnimatePresence>
           {justAdded && (
             <motion.div

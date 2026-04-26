@@ -11,6 +11,11 @@ import { Card } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, ShieldCheck, BarChart3, Plug, SlidersHorizontal } from "lucide-react";
+import { useAuth } from "@/components/auth-provider";
+import {
+  AdminCreateIndicatorButton,
+  AdminIndicatorActions,
+} from "@/components/admin/admin-indicator-controls";
 
 type CategoryKey = "Scalping" | "Intraday" | "Swing" | "Positional";
 
@@ -32,6 +37,8 @@ const MARKET_OPTIONS: { key: MarketKey; label: string; match: RegExp }[] = [
 ];
 
 export default function IndicatorsPage() {
+  const { user } = useAuth();
+  const isAdmin = !!user?.isAdmin;
   const [activeTier, setActiveTier] = useState<"All" | "Free" | "Premium">("All");
   const [activeCategory, setActiveCategory] = useState<"All" | CategoryKey>("All");
   const [search, setSearch] = useState("");
@@ -112,6 +119,11 @@ export default function IndicatorsPage() {
             <p className="mt-3 text-sm text-muted-foreground sm:text-base">
               Powerful, non-repainting TradingView indicators built for precision, confluence and consistent results.
             </p>
+            {isAdmin && (
+              <div className="mt-4">
+                <AdminCreateIndicatorButton label="Add New Indicator" />
+              </div>
+            )}
           </div>
           <Card className="flex flex-wrap items-center gap-5 border-card-border bg-card/60 px-5 py-4 backdrop-blur">
             {trustBadges.map(({ Icon, title, subtitle }) => (
@@ -278,7 +290,11 @@ export default function IndicatorsPage() {
             data-testid="indicators-grid"
           >
             {filtered.map((indicator) => (
-              <IndicatorCard key={indicator.id} indicator={indicator} />
+              <IndicatorCard
+                key={indicator.id}
+                indicator={indicator}
+                adminOverlay={isAdmin ? <AdminIndicatorActions indicator={indicator} /> : undefined}
+              />
             ))}
             {filtered.length === 0 && (
               <div className="col-span-full py-20 text-center text-muted-foreground">

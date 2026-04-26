@@ -276,7 +276,7 @@ export function AdminEditor() {
   );
 }
 
-function IndicatorFormDialog({
+export function IndicatorFormDialog({
   open, initial, isCreate, onClose,
 }: { open: boolean; initial: Indicator | null; isCreate: boolean; onClose: () => void; }) {
   const { toast } = useToast();
