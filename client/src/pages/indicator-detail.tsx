@@ -5,7 +5,7 @@ import {
   ArrowLeft, ShoppingCart, CheckCircle2, TrendingUp, BarChart3,
   Target, Clock, Zap, Activity, Brain, Crown, Globe,
   LogIn, LogOut as LogOutIcon, Crosshair, ChevronRight,
-  Check, Lock, Star, ShieldCheck, Bookmark, Sparkles,
+  Lock, Star, ShieldCheck, Bookmark, Sparkles,
   Cpu, LineChart, AlertTriangle, MonitorSmartphone, BookOpen,
   Settings as SettingsIcon, MessageSquare, HelpCircle, Award,
   Code2, Calendar, User as UserIcon, Play,
@@ -22,6 +22,9 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { ChartPreview } from "@/components/chart-preview";
@@ -784,20 +787,33 @@ export default function IndicatorDetail() {
                 Pricing
               </DialogTitle>
               {!isFree && (
-                <Badge
-                  variant={dialogIsTrial ? "default" : "outline"}
-                  className="cursor-pointer text-[10px]"
-                  onClick={() => setDialogIsTrial((v) => !v)}
-                  data-testid="badge-toggle-trial"
-                >
-                  <Clock className="mr-1 h-3 w-3" /> {indicator.trialDays || 15}-day trial
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Label
+                    htmlFor="switch-toggle-trial"
+                    className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground cursor-pointer"
+                  >
+                    <Clock className="h-3 w-3" /> {indicator.trialDays || 15}-day trial
+                  </Label>
+                  <Switch
+                    id="switch-toggle-trial"
+                    checked={dialogIsTrial}
+                    onCheckedChange={(v) => setDialogIsTrial(Boolean(v))}
+                    aria-label={`Toggle ${indicator.trialDays || 15}-day trial`}
+                    className="h-5 w-9 [&>span]:h-4 [&>span]:w-4 [&>span[data-state=checked]]:translate-x-4"
+                    data-testid="switch-toggle-trial"
+                  />
+                </div>
               )}
             </DialogHeader>
             <DialogDescription className="sr-only">Select version, duration and add to cart.</DialogDescription>
 
             {/* Version selector */}
-            <div className="space-y-2" role="radiogroup" aria-label="Select version">
+            <RadioGroup
+              value={dialogVersion}
+              onValueChange={(v) => setDialogVersion(v as ProductVersion)}
+              aria-label="Select version"
+              className="gap-2"
+            >
               {([
                 { key: "indicator" as ProductVersion, label: "Indicator", icon: LineChart, tagline: "Chart signals", price: indicatorVersionPrice, testId: "dialog-version-indicator" },
                 { key: "strategy" as ProductVersion, label: "Strategy", icon: Cpu, tagline: "Auto entries & alerts", price: strategyVersionPrice, testId: "dialog-version-strategy" },
@@ -806,14 +822,12 @@ export default function IndicatorDetail() {
                 const active = dialogVersion === key;
                 const displayPrice = dialogIsTrial ? computeTrialPrice(key) : price;
                 const isFreePrice = parseFloat(displayPrice) === 0;
+                const inputId = `radio-${testId}`;
                 return (
-                  <button
+                  <Label
                     key={key}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    onClick={() => setDialogVersion(key)}
-                    className={`w-full rounded-lg border p-3 text-left transition-all hover-elevate ${
+                    htmlFor={inputId}
+                    className={`block w-full cursor-pointer rounded-lg border p-3 font-normal transition-all hover-elevate ${
                       active ? "border-primary/60 bg-primary/[0.04]" : "border-card-border"
                     }`}
                     data-testid={testId}
@@ -839,15 +853,18 @@ export default function IndicatorDetail() {
                             </>
                           )}
                         </div>
-                        <div className={`flex h-4 w-4 items-center justify-center rounded-full border ${active ? "border-primary bg-primary" : "border-muted-foreground/30"}`}>
-                          {active && <Check className="h-2.5 w-2.5 text-primary-foreground" strokeWidth={3} />}
-                        </div>
+                        <RadioGroupItem
+                          value={key}
+                          id={inputId}
+                          aria-label={label}
+                          data-testid={`input-${testId}`}
+                        />
                       </div>
                     </div>
-                  </button>
+                  </Label>
                 );
               })}
-            </div>
+            </RadioGroup>
 
             {/* Duration selector (hidden when trial) */}
             {!dialogIsTrial && (
