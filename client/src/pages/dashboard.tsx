@@ -42,6 +42,9 @@ import {
   Calendar,
   Download,
   Infinity as InfinityIcon,
+  Hourglass,
+  AlertTriangle,
+  LifeBuoy,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { z } from "zod";
@@ -146,6 +149,7 @@ export default function Dashboard() {
   const [view, setView] = useState<DashView>("active");
   const [watchlistIds, setWatchlistIds] = useState<number[]>(() => readWatchlistIds());
   const [savingProfile, setSavingProfile] = useState(false);
+  const [now, setNow] = useState<number>(() => Date.now());
 
   useEffect(() => {
     const sync = () => setWatchlistIds(readWatchlistIds());
@@ -155,6 +159,12 @@ export default function Dashboard() {
       window.removeEventListener("storage", sync);
       window.removeEventListener("watchlist-updated", sync);
     };
+  }, []);
+
+  useEffect(() => {
+    const tick = () => setNow(Date.now());
+    const interval = window.setInterval(tick, 30 * 1000);
+    return () => window.clearInterval(interval);
   }, []);
 
   const accountForm = useForm<AccountFormValues>({
@@ -214,9 +224,9 @@ export default function Dashboard() {
     );
   }
 
-  const allItems = orders?.flatMap((o) => o.items.map((item) => ({ ...item, orderStatus: o.status, orderId: o.id, orderCreatedAt: o.createdAt, orderApprovedAt: o.approvedAt }))) || [];
+  const allItems = orders?.flatMap((o) => o.items.map((item) => ({ ...item, orderStatus: o.status, orderId: o.id, orderCreatedAt: o.createdAt, orderApprovedAt: o.approvedAt, orderRejectionReason: o.rejectionReason }))) || [];
   const activeIndicators = allItems.filter((i) => i.accessStatus === "active");
-  const pendingItems = allItems.filter((i) => i.accessStatus === "pending");
+  const pendingItems = allItems.filter((i) => i.accessStatus === "pending" || i.accessStatus === "rejected");
   const totalOrders = orders?.length || 0;
   const savedIndicators = (allIndicators || []).filter((ind) => watchlistIds.includes(ind.id));
 
@@ -646,7 +656,14 @@ export default function Dashboard() {
 
                 {view === "pending" && (
                   <div className="mb-2">
-                    <h2 className="text-lg font-semibold mb-4" data-testid="text-pending-heading">Pending Access Requests</h2>
+                    <div className="mb-4 flex items-end justify-between gap-3">
+                      <h2 className="text-lg font-semibold" data-testid="text-pending-heading">Pending Requests</h2>
+                      {pendingItems.length > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          {pendingItems.length} request{pendingItems.length !== 1 ? "s" : ""} need your attention
+                        </span>
+                      )}
+                    </div>
                     {pendingItems.length === 0 ? (
                       <Card className="border-card-border p-8 text-center" data-testid="empty-pending">
                         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
@@ -657,46 +674,188 @@ export default function Dashboard() {
                       </Card>
                     ) : (
                       <div className="space-y-3">
-                        {pendingItems.map((item) => {
-                          const ageMs = Date.now() - new Date(item.orderCreatedAt).getTime();
-                          const isStale = ageMs > PENDING_SUPPORT_THRESHOLD_MS;
+                        {pendingItems.map((item, idx) => {
+                          const isRejected = item.accessStatus === "rejected";
+                          const createdAt = new Date(item.orderCreatedAt);
+                          const createdMs = createdAt.getTime();
+                          const hasValidDate = Number.isFinite(createdMs);
+                          const ageMs = hasValidDate ? now - createdMs : 0;
+                          const slaMs = PENDING_SUPPORT_THRESHOLD_MS;
+                          const msLeft = Math.max(0, slaMs - ageMs);
+                          const hoursLeft = Math.floor(msLeft / (60 * 60 * 1000));
+                          const minutesLeft = Math.floor((msLeft % (60 * 60 * 1000)) / (60 * 1000));
+                          const isOverdue = !isRejected && ageMs > slaMs;
+                          const unlockBy = new Date(createdAt.getTime() + slaMs);
+                          const unlockDateStr = unlockBy.toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" });
+                          const unlockTimeStr = unlockBy.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+                          const buyingDateStr = createdAt.toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+                          const supportMessage = isRejected
+                            ? `Hi Pine Signal Lab team, my order #${item.orderId} for "${item.indicatorName}" was rejected${item.orderRejectionReason ? ` ("${item.orderRejectionReason}")` : ""}. Please help me resolve this.`
+                            : `Hi Pine Signal Lab team, my order #${item.orderId} for "${item.indicatorName}" is still under process. Could you please prioritize the approval?`;
+                          const supportUrl = buildWhatsAppUrl(supportMessage);
+
+                          const rejectionText = item.orderRejectionReason
+                            ? `We regret to inform you that your request has been rejected. ${item.orderRejectionReason} Please connect with Quick Support at the earliest to resolve this issue.`
+                            : "We regret to inform you that your request has been rejected. Please connect with Quick Support at the earliest to resolve this issue.";
+                          const processingText = isOverdue
+                            ? "Your request is taking longer than usual. Our team has been notified — please tap Quick Support so we can prioritize and grant access immediately."
+                            : "Your request is currently under process. You will receive access to your purchase within 24 hours from the time of purchase. The validity of the indicator will begin from the time access is granted.";
+
                           return (
-                            <Card key={`pending-${item.id}`} className="border-card-border p-4" data-testid={`pending-item-${item.id}`}>
-                              <div className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-3 min-w-0">
-                                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-amber-500/10">
-                                    <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <Link href={`/indicator/${item.indicatorSlug}`} className="font-medium hover:underline truncate block" data-testid={`link-pending-${item.id}`}>
+                            <Card
+                              key={`pending-${item.id}`}
+                              className={`overflow-hidden border-card-border p-0 transition-all hover-elevate ${
+                                isRejected
+                                  ? "border-l-4 border-l-rose-500"
+                                  : isOverdue
+                                  ? "border-l-4 border-l-amber-500"
+                                  : "border-l-4 border-l-cyan-500"
+                              }`}
+                              data-testid={`pending-item-${item.id}`}
+                            >
+                              <div className="grid items-stretch gap-4 p-4 sm:gap-5 sm:p-5 lg:grid-cols-[minmax(0,1.1fr)_auto_minmax(0,1.4fr)_auto]">
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-sm font-bold text-muted-foreground">{idx + 1}.</span>
+                                    <Link
+                                      href={`/indicator/${item.indicatorSlug}`}
+                                      className={`text-base font-semibold hover:underline truncate ${
+                                        isRejected
+                                          ? "text-rose-600 dark:text-rose-400"
+                                          : isOverdue
+                                          ? "text-amber-700 dark:text-amber-400"
+                                          : "text-cyan-700 dark:text-cyan-300"
+                                      }`}
+                                      data-testid={`link-pending-${item.id}`}
+                                    >
                                       {item.indicatorName}
                                     </Link>
-                                    <p className="text-xs text-muted-foreground">
-                                      {item.isTrial ? "15-Day Trial" : `${item.duration} month${item.duration !== 1 ? "s" : ""}`} — Order #{item.orderId}
-                                    </p>
                                   </div>
-                                </div>
-                                <Badge variant="secondary" className="shrink-0">
-                                  <Clock className="mr-1 h-3 w-3" /> Awaiting Approval
-                                </Badge>
-                              </div>
-                              {isStale && (
-                                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2.5">
-                                  <p className="text-[11.5px] leading-snug text-amber-700 dark:text-amber-300">
-                                    This request has been pending for over 24 hours. Reach out and we'll prioritize it.
+                                  <div className="mt-1.5 flex flex-wrap items-center gap-2 text-sm">
+                                    <Badge
+                                      variant="outline"
+                                      className={`text-[10px] uppercase tracking-wide ${
+                                        item.version === "strategy"
+                                          ? "border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400"
+                                          : "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                      }`}
+                                    >
+                                      {item.version === "strategy" ? "Strategy" : "Indicator"}
+                                    </Badge>
+                                    <span className="font-medium text-foreground">
+                                      {item.isTrial ? "15-Day Trial" : `${item.duration} Month Plan`}
+                                    </span>
+                                  </div>
+                                  <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground" data-testid={`text-buying-date-${item.id}`}>
+                                    <Calendar className="h-3 w-3" />
+                                    Buying date: {buyingDateStr}
                                   </p>
-                                  <a
-                                    href={buildWhatsAppUrl(`Hi Pine Signal Lab team, my order #${item.orderId} for "${item.indicatorName}" has been pending for over 24 hours. Please help.`)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    data-testid={`button-pending-support-${item.id}`}
-                                  >
-                                    <Button size="sm" variant="outline" className="h-7 gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:text-emerald-700 dark:text-emerald-300 dark:hover:text-emerald-300">
-                                      <MessageCircle className="h-3.5 w-3.5" /> Contact Support Team
-                                    </Button>
-                                  </a>
+                                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                    Order #{item.orderId}
+                                  </p>
                                 </div>
-                              )}
+
+                                <div className="flex flex-col items-start gap-1.5 lg:items-center lg:justify-center">
+                                  {isRejected ? (
+                                    <>
+                                      <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-rose-500 to-orange-500 px-4 py-1.5 text-xs font-semibold text-white shadow-sm" data-testid={`pill-status-${item.id}`}>
+                                        <AlertTriangle className="h-3.5 w-3.5" />
+                                        Rejected
+                                      </span>
+                                      <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-600 dark:text-rose-400">
+                                        Rejected on {buyingDateStr}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-1.5 text-xs font-semibold text-white shadow-sm" data-testid={`pill-status-${item.id}`}>
+                                        <Hourglass className="h-3.5 w-3.5 animate-pulse" />
+                                        Under Process
+                                      </span>
+                                      <span className={`text-[10px] font-semibold uppercase tracking-wider ${isOverdue ? "text-amber-600 dark:text-amber-400" : "text-cyan-700 dark:text-cyan-400"}`}>
+                                        {isOverdue
+                                          ? "Action needed"
+                                          : hoursLeft >= 1
+                                          ? `Within ${hoursLeft} hour${hoursLeft !== 1 ? "s" : ""}`
+                                          : `Within ${Math.max(1, minutesLeft)} min`}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+
+                                <div className={`rounded-lg border p-3 text-sm leading-relaxed ${
+                                  isRejected
+                                    ? "border-rose-500/20 bg-rose-500/5 text-foreground"
+                                    : isOverdue
+                                    ? "border-amber-500/20 bg-amber-500/5 text-foreground"
+                                    : "border-cyan-500/20 bg-cyan-500/5 text-foreground"
+                                }`}>
+                                  <p data-testid={`text-status-message-${item.id}`}>
+                                    {isRejected ? rejectionText : processingText}
+                                  </p>
+                                </div>
+
+                                <div className="flex flex-col items-stretch justify-between gap-2 rounded-lg border border-card-border bg-muted/30 p-3 text-center lg:min-w-[180px]">
+                                  {isRejected || isOverdue ? (
+                                    <>
+                                      <div className="space-y-0.5">
+                                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                          {isRejected ? "Need Help?" : "Quick Support"}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground leading-snug">
+                                          Our team will resolve this in minutes.
+                                        </p>
+                                      </div>
+                                      <a
+                                        href={supportUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        data-testid={`button-pending-support-${item.id}`}
+                                      >
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          className="w-full gap-1.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-sm hover:from-emerald-600 hover:to-emerald-700"
+                                        >
+                                          <LifeBuoy className="h-3.5 w-3.5" />
+                                          Connect Quick Support
+                                        </Button>
+                                      </a>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <div>
+                                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                          Unlock In
+                                        </p>
+                                        <p className="mt-0.5 text-xl font-extrabold leading-none text-cyan-700 dark:text-cyan-400" data-testid={`text-unlock-countdown-${item.id}`}>
+                                          {hoursLeft}h {minutesLeft}m
+                                        </p>
+                                      </div>
+                                      <div className="space-y-0.5 border-t border-card-border pt-1.5">
+                                        <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                          Estimated Unlock
+                                        </p>
+                                        <p className="text-[11px] font-medium text-foreground leading-tight" data-testid={`text-unlock-time-${item.id}`}>
+                                          {unlockDateStr}
+                                          <br />
+                                          {unlockTimeStr}
+                                        </p>
+                                      </div>
+                                      <a
+                                        href={supportUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-[11px] font-medium text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-400"
+                                        data-testid={`link-pending-support-${item.id}`}
+                                      >
+                                        Need help?
+                                      </a>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
                             </Card>
                           );
                         })}
