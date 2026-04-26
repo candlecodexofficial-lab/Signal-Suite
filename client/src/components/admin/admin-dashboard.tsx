@@ -260,7 +260,7 @@ export function AdminDashboard() {
   };
 
   return (
-    <>
+    <div className="flex h-full flex-col overflow-y-auto" data-testid="container-admin-dashboard">
       {/* Header */}
       <div className="border-b bg-background px-4 py-3 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -367,7 +367,7 @@ export function AdminDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
 
@@ -673,67 +673,81 @@ function TodayRequestsPanel({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {requests.flatMap((r, idx) => {
-                    const fullName = `${r.user.firstName} ${r.user.lastName}`;
-                    const initials = `${r.user.firstName.charAt(0).toUpperCase()}${r.user.lastName.charAt(0).toUpperCase()}`;
-                    const orderId = r.order.id;
-                    const items = r.order.items;
-                    const itemCount = items.length;
-                    const isExpanded = expandedOrderId === orderId;
-                    const isApprovingRow = approving && approvingId === orderId;
-                    const planSummary = summarizePlan(items);
-                    const earliestEndMs =
-                      itemCount > 0
-                        ? items
-                            .map((it) => calculateEndDate(r.order.createdAt, it.duration, it.isTrial).getTime())
-                            .reduce((a, b) => Math.min(a, b))
-                        : null;
-                    const orderTotal = parseFloat(r.order.totalAmount) || 0;
-                    const rows = [
-                      <TableRow
-                        key={`row-${orderId}`}
-                        className={isExpanded ? "bg-amber-500/[0.04]" : ""}
-                        data-testid={`row-today-${orderId}`}
-                      >
-                        <TableCell className="text-center font-mono text-xs text-muted-foreground" data-testid={`text-today-sno-${orderId}`}>
-                          {String(idx + 1).padStart(2, "0")}
-                        </TableCell>
+                  {(() => {
+                    const rendered: JSX.Element[] = [];
+                    let serial = 0;
+                    requests.forEach((r) => {
+                      const fullName = `${r.user.firstName} ${r.user.lastName}`;
+                      const initials = `${r.user.firstName.charAt(0).toUpperCase()}${r.user.lastName.charAt(0).toUpperCase()}`;
+                      const orderId = r.order.id;
+                      const items = r.order.items;
+                      const itemCount = items.length;
+                      const isExpanded = expandedOrderId === orderId;
+                      const isApprovingRow = approving && approvingId === orderId;
+                      const orderTotal = parseFloat(r.order.totalAmount) || 0;
+                      const orderDate = new Date(r.order.createdAt);
 
-                        <TableCell>
-                          <div className="flex items-center gap-2.5">
-                            <Avatar className="h-9 w-9">
-                              <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                                {initials}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-sm font-semibold truncate" data-testid={`text-today-name-${orderId}`}>
-                                  {fullName}
-                                </span>
-                                {r.user.isAdmin && <ShieldCheck className="h-3 w-3 shrink-0 text-primary" />}
-                              </div>
-                              <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                                <Phone className="h-2.5 w-2.5" />
-                                <span className="truncate" data-testid={`text-today-mobile-${orderId}`}>
-                                  {r.user.mobileNumber || "—"}
-                                </span>
-                              </div>
-                              <p className="text-[10px] text-muted-foreground truncate">@{r.user.username} · #{r.user.id}</p>
-                            </div>
-                          </div>
-                        </TableCell>
+                      const itemsToRender: (AdminOrderItem | null)[] =
+                        itemCount === 0 ? [null] : items;
 
-                        <TableCell>
-                          {itemCount === 0 ? (
-                            <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400" data-testid={`text-today-noitems-${orderId}`}>
-                              <AlertCircle className="h-3.5 w-3.5" />
-                              No items in this order
-                            </div>
-                          ) : (
-                            <div className="space-y-1">
-                              {items.map((item) => (
-                                <div key={item.id} className="min-w-0" data-testid={`item-today-${item.id}`}>
+                      itemsToRender.forEach((item, itemIdx) => {
+                        serial += 1;
+                        const isLastItem = itemIdx === itemsToRender.length - 1;
+                        const itemKey = item ? `${item.id}` : "empty";
+                        const rowTestKey = item ? `${orderId}-${item.id}` : `${orderId}-empty`;
+                        const itemEnd = item
+                          ? calculateEndDate(r.order.createdAt, item.duration, item.isTrial)
+                          : null;
+                        const itemPlanLabel = item
+                          ? item.isTrial
+                            ? "15-Day Trial"
+                            : `${item.duration} Month Plan`
+                          : "—";
+                        const itemPrice = item ? parseFloat(item.price) || 0 : 0;
+
+                        rendered.push(
+                          <TableRow
+                            key={`row-${orderId}-${itemKey}`}
+                            className={isExpanded ? "bg-amber-500/[0.04]" : ""}
+                            data-testid={`row-today-${rowTestKey}`}
+                          >
+                            <TableCell className="text-center font-mono text-xs text-muted-foreground" data-testid={`text-today-sno-${rowTestKey}`}>
+                              {String(serial).padStart(2, "0")}
+                            </TableCell>
+
+                            <TableCell>
+                              <div className="flex items-center gap-2.5">
+                                <Avatar className="h-9 w-9">
+                                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                                    {initials}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-sm font-semibold truncate" data-testid={`text-today-name-${rowTestKey}`}>
+                                      {fullName}
+                                    </span>
+                                    {r.user.isAdmin && <ShieldCheck className="h-3 w-3 shrink-0 text-primary" />}
+                                  </div>
+                                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                                    <Phone className="h-2.5 w-2.5" />
+                                    <span className="truncate" data-testid={`text-today-mobile-${rowTestKey}`}>
+                                      {r.user.mobileNumber || "—"}
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-muted-foreground truncate">@{r.user.username} · #{r.user.id}</p>
+                                </div>
+                              </div>
+                            </TableCell>
+
+                            <TableCell>
+                              {item === null ? (
+                                <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400" data-testid={`text-today-noitems-${orderId}`}>
+                                  <AlertCircle className="h-3.5 w-3.5" />
+                                  No items in this order
+                                </div>
+                              ) : (
+                                <div className="min-w-0" data-testid={`item-today-${item.id}`}>
                                   <Link
                                     href={`/indicator/${item.indicatorSlug}`}
                                     className="text-sm font-semibold hover:underline"
@@ -762,201 +776,207 @@ function TodayRequestsPanel({
                                       </Badge>
                                     )}
                                     <span className="text-[10px] text-muted-foreground">
-                                      {item.isTrial ? "15d" : `${item.duration}mo`} · {formatINR(parseFloat(item.price) || 0)}
+                                      {item.isTrial ? "15d" : `${item.duration}mo`} · {formatINR(itemPrice)}
                                     </span>
                                   </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </TableCell>
-
-                        <TableCell>
-                          <div className="text-xs">
-                            <p className="font-medium" data-testid={`text-today-date-${orderId}`}>
-                              {new Date(r.order.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                            </p>
-                            <p className="text-muted-foreground" data-testid={`text-today-time-${orderId}`}>
-                              {new Date(r.order.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground font-mono">Order #{orderId}</p>
-                          </div>
-                        </TableCell>
-
-                        <TableCell>
-                          <span className="inline-flex items-center gap-1 rounded-md bg-muted/60 px-2 py-1 font-mono text-xs" data-testid={`text-today-tv-${orderId}`}>
-                            <TrendingUp className="h-3 w-3 text-muted-foreground" />
-                            {r.user.tradingViewUsername}
-                          </span>
-                        </TableCell>
-
-                        <TableCell>
-                          <div className="text-xs">
-                            <p className="font-semibold" data-testid={`text-today-plan-${orderId}`}>
-                              {planSummary.label}
-                            </p>
-                            {earliestEndMs !== null && (
-                              <p className="text-muted-foreground">
-                                {planSummary.mixed ? "Earliest ends " : "Ends "}
-                                <span className="font-medium text-foreground" data-testid={`text-today-end-${orderId}`}>
-                                  {new Date(earliestEndMs).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                                </span>
-                              </p>
-                            )}
-                            <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400" data-testid={`text-today-total-${orderId}`}>
-                              {formatINR(orderTotal)}
-                            </p>
-                          </div>
-                        </TableCell>
-
-                        <TableCell className="text-center">
-                          <div className="flex flex-col items-center gap-1">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 gap-1 px-2 text-xs"
-                                  disabled={isApprovingRow}
-                                  data-testid={`button-today-actions-${orderId}`}
-                                  aria-label={`Actions for order #${orderId}`}
-                                >
-                                  <MoreHorizontal className="h-3 w-3" />
-                                  Action
-                                  <ChevronDown className="h-3 w-3 opacity-60" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-44">
-                                <DropdownMenuLabel className="text-[11px]">Order #{orderId}</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onSelect={() => onApprove(orderId)}
-                                  disabled={isApprovingRow || itemCount === 0}
-                                  className="text-emerald-700 focus:text-emerald-700 dark:text-emerald-400 dark:focus:text-emerald-400"
-                                  data-testid={`button-today-grant-${orderId}`}
-                                >
-                                  <CheckCircle2 className="mr-2 h-3.5 w-3.5" />
-                                  Grant Order
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onSelect={() => onReject(orderId, fullName)}
-                                  className="text-rose-700 focus:text-rose-700 dark:text-rose-400 dark:focus:text-rose-400"
-                                  data-testid={`button-today-reject-${orderId}`}
-                                >
-                                  <X className="mr-2 h-3.5 w-3.5" />
-                                  Reject Order
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onSelect={() => onToggleExpanded(orderId)}
-                                  data-testid={`button-today-hold-${orderId}`}
-                                >
-                                  <Hourglass className="mr-2 h-3.5 w-3.5" />
-                                  Hold
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                            {itemCount > 1 && (
-                              <p className="text-center text-[10px] text-amber-700 dark:text-amber-400" data-testid={`text-today-multi-${orderId}`}>
-                                Affects all {itemCount} items
-                              </p>
-                            )}
-                          </div>
-                        </TableCell>
-
-                        <TableCell className="text-center">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 w-full gap-1 px-2 text-xs"
-                            onClick={() => onToggleExpanded(orderId)}
-                            aria-expanded={isExpanded}
-                            aria-label={isExpanded ? `Hide quick view for order #${orderId}` : `Show quick view for order #${orderId}`}
-                            data-testid={`button-today-quickview-${orderId}`}
-                          >
-                            <Eye className="h-3 w-3" />
-                            {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                          </Button>
-                        </TableCell>
-
-                        <TableCell className="text-center">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 gap-1 px-2 text-xs"
-                            onClick={() => onQuickView(r.user.id)}
-                            data-testid={`button-today-details-${orderId}`}
-                          >
-                            <UserIcon className="h-3 w-3" />
-                            View
-                          </Button>
-                        </TableCell>
-                      </TableRow>,
-                    ];
-                    if (isExpanded) {
-                      rows.push(
-                        <TableRow key={`exp-${orderId}`} className="bg-amber-500/[0.04]" data-testid={`row-today-expanded-${orderId}`}>
-                          <TableCell colSpan={9} className="p-0">
-                            <div className="grid gap-3 border-t border-amber-500/15 px-4 py-3 sm:grid-cols-2 lg:grid-cols-4">
-                              <QuickInfo icon={Mail} label="Email" value={r.user.email} testId={`quick-email-${orderId}`} />
-                              <QuickInfo icon={Phone} label="Mobile" value={r.user.mobileNumber || "—"} testId={`quick-mobile-${orderId}`} />
-                              <QuickInfo icon={Calendar} label="Joined" value={formatShortDate(r.user.createdAt)} testId={`quick-joined-${orderId}`} />
-                              <QuickInfo icon={CreditCard} label="Lifetime Spent" value={formatINR(r.user.totalSpent)} testId={`quick-spent-${orderId}`} />
-                              <QuickInfo icon={Package} label="Order ID" value={`#${orderId}`} mono testId={`quick-orderid-${orderId}`} />
-                              <QuickInfo
-                                icon={Clock}
-                                label="Order Total"
-                                value={formatINR(orderTotal)}
-                                testId={`quick-ordertotal-${orderId}`}
-                              />
-                              <QuickInfo
-                                icon={Inbox}
-                                label="Items in Order"
-                                value={String(itemCount)}
-                                testId={`quick-itemcount-${orderId}`}
-                              />
-                              <QuickInfo
-                                icon={AlertCircle}
-                                label="Other Pending"
-                                value={String(
-                                  r.user.orders.filter((o) => o.status === "pending" && o.id !== orderId).length
-                                )}
-                                testId={`quick-otherpending-${orderId}`}
-                              />
-                              {itemCount > 0 && (
-                                <div className="sm:col-span-2 lg:col-span-4">
-                                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                    Item-level subscription dates
-                                  </p>
-                                  <div className="flex flex-col gap-1">
-                                    {items.map((it) => {
-                                      const itEnd = calculateEndDate(r.order.createdAt, it.duration, it.isTrial);
-                                      return (
-                                        <div
-                                          key={it.id}
-                                          className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-background px-2 py-1.5 text-xs"
-                                          data-testid={`detail-orderitem-${it.id}`}
-                                        >
-                                          <span className="font-medium">{it.indicatorName}</span>
-                                          <span className="text-muted-foreground">
-                                            {it.isTrial ? "15-Day Trial" : `${it.duration} Month Plan`} · ends{" "}
-                                            <span className="font-medium text-foreground">
-                                              {itEnd.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                                            </span>{" "}
-                                            · {formatINR(parseFloat(it.price) || 0)}
-                                          </span>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
+                                  {itemCount > 1 && (
+                                    <p className="mt-0.5 text-[10px] text-muted-foreground">
+                                      Item {itemIdx + 1} of {itemCount} · Order #{orderId}
+                                    </p>
+                                  )}
                                 </div>
                               )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    }
-                    return rows;
-                  })}
+                            </TableCell>
+
+                            <TableCell>
+                              <div className="text-xs">
+                                <p className="font-medium" data-testid={`text-today-date-${rowTestKey}`}>
+                                  {orderDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                                </p>
+                                <p className="text-muted-foreground" data-testid={`text-today-time-${rowTestKey}`}>
+                                  {orderDate.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground font-mono">Order #{orderId}</p>
+                              </div>
+                            </TableCell>
+
+                            <TableCell>
+                              <span className="inline-flex items-center gap-1 rounded-md bg-muted/60 px-2 py-1 font-mono text-xs" data-testid={`text-today-tv-${rowTestKey}`}>
+                                <TrendingUp className="h-3 w-3 text-muted-foreground" />
+                                {r.user.tradingViewUsername}
+                              </span>
+                            </TableCell>
+
+                            <TableCell>
+                              <div className="text-xs">
+                                <p className="font-semibold" data-testid={`text-today-plan-${rowTestKey}`}>
+                                  {itemPlanLabel}
+                                </p>
+                                {itemEnd !== null && (
+                                  <p className="text-muted-foreground">
+                                    Ends{" "}
+                                    <span className="font-medium text-foreground" data-testid={`text-today-end-${rowTestKey}`}>
+                                      {itemEnd.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                                    </span>
+                                  </p>
+                                )}
+                                <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400" data-testid={`text-today-price-${rowTestKey}`}>
+                                  {formatINR(item ? itemPrice : orderTotal)}
+                                </p>
+                              </div>
+                            </TableCell>
+
+                            <TableCell className="text-center">
+                              <div className="flex flex-col items-center gap-1">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 gap-1 px-2 text-xs"
+                                      disabled={isApprovingRow}
+                                      data-testid={`button-today-actions-${rowTestKey}`}
+                                      aria-label={`Actions for order #${orderId}`}
+                                    >
+                                      <MoreHorizontal className="h-3 w-3" />
+                                      Action
+                                      <ChevronDown className="h-3 w-3 opacity-60" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-44">
+                                    <DropdownMenuLabel className="text-[11px]">Order #{orderId}</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onSelect={() => onApprove(orderId)}
+                                      disabled={isApprovingRow || itemCount === 0}
+                                      className="text-emerald-700 focus:text-emerald-700 dark:text-emerald-400 dark:focus:text-emerald-400"
+                                      data-testid={`button-today-grant-${rowTestKey}`}
+                                    >
+                                      <CheckCircle2 className="mr-2 h-3.5 w-3.5" />
+                                      Grant Order
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onSelect={() => onReject(orderId, fullName)}
+                                      className="text-rose-700 focus:text-rose-700 dark:text-rose-400 dark:focus:text-rose-400"
+                                      data-testid={`button-today-reject-${rowTestKey}`}
+                                    >
+                                      <X className="mr-2 h-3.5 w-3.5" />
+                                      Reject Order
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onSelect={() => onToggleExpanded(orderId)}
+                                      data-testid={`button-today-hold-${rowTestKey}`}
+                                    >
+                                      <Hourglass className="mr-2 h-3.5 w-3.5" />
+                                      Hold
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                                {itemCount > 1 && (
+                                  <p className="text-center text-[10px] text-amber-700 dark:text-amber-400" data-testid={`text-today-multi-${rowTestKey}`}>
+                                    Affects all {itemCount} items
+                                  </p>
+                                )}
+                              </div>
+                            </TableCell>
+
+                            <TableCell className="text-center">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-full gap-1 px-2 text-xs"
+                                onClick={() => onToggleExpanded(orderId)}
+                                aria-expanded={isExpanded}
+                                aria-label={isExpanded ? `Hide quick view for order #${orderId}` : `Show quick view for order #${orderId}`}
+                                data-testid={`button-today-quickview-${rowTestKey}`}
+                              >
+                                <Eye className="h-3 w-3" />
+                                {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                              </Button>
+                            </TableCell>
+
+                            <TableCell className="text-center">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 gap-1 px-2 text-xs"
+                                onClick={() => onQuickView(r.user.id)}
+                                data-testid={`button-today-details-${rowTestKey}`}
+                              >
+                                <UserIcon className="h-3 w-3" />
+                                View
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+
+                        if (isLastItem && isExpanded) {
+                          rendered.push(
+                            <TableRow key={`exp-${orderId}`} className="bg-amber-500/[0.04]" data-testid={`row-today-expanded-${orderId}`}>
+                              <TableCell colSpan={9} className="p-0">
+                                <div className="grid gap-3 border-t border-amber-500/15 px-4 py-3 sm:grid-cols-2 lg:grid-cols-4">
+                                  <QuickInfo icon={Mail} label="Email" value={r.user.email} testId={`quick-email-${orderId}`} />
+                                  <QuickInfo icon={Phone} label="Mobile" value={r.user.mobileNumber || "—"} testId={`quick-mobile-${orderId}`} />
+                                  <QuickInfo icon={Calendar} label="Joined" value={formatShortDate(r.user.createdAt)} testId={`quick-joined-${orderId}`} />
+                                  <QuickInfo icon={CreditCard} label="Lifetime Spent" value={formatINR(r.user.totalSpent)} testId={`quick-spent-${orderId}`} />
+                                  <QuickInfo icon={Package} label="Order ID" value={`#${orderId}`} mono testId={`quick-orderid-${orderId}`} />
+                                  <QuickInfo
+                                    icon={Clock}
+                                    label="Order Total"
+                                    value={formatINR(orderTotal)}
+                                    testId={`quick-ordertotal-${orderId}`}
+                                  />
+                                  <QuickInfo
+                                    icon={Inbox}
+                                    label="Items in Order"
+                                    value={String(itemCount)}
+                                    testId={`quick-itemcount-${orderId}`}
+                                  />
+                                  <QuickInfo
+                                    icon={AlertCircle}
+                                    label="Other Pending"
+                                    value={String(
+                                      r.user.orders.filter((o) => o.status === "pending" && o.id !== orderId).length
+                                    )}
+                                    testId={`quick-otherpending-${orderId}`}
+                                  />
+                                  {itemCount > 0 && (
+                                    <div className="sm:col-span-2 lg:col-span-4">
+                                      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                        Item-level subscription dates
+                                      </p>
+                                      <div className="flex flex-col gap-1">
+                                        {items.map((it) => {
+                                          const itEnd = calculateEndDate(r.order.createdAt, it.duration, it.isTrial);
+                                          return (
+                                            <div
+                                              key={it.id}
+                                              className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-background px-2 py-1.5 text-xs"
+                                              data-testid={`detail-orderitem-${it.id}`}
+                                            >
+                                              <span className="font-medium">{it.indicatorName}</span>
+                                              <span className="text-muted-foreground">
+                                                {it.isTrial ? "15-Day Trial" : `${it.duration} Month Plan`} · ends{" "}
+                                                <span className="font-medium text-foreground">
+                                                  {itEnd.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                                                </span>{" "}
+                                                · {formatINR(parseFloat(it.price) || 0)}
+                                              </span>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        }
+                      });
+                    });
+                    return rendered;
+                  })()}
                 </TableBody>
               </Table>
             </div>
