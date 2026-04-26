@@ -39,6 +39,9 @@ import {
   Radio,
   Save,
   HelpCircle,
+  Calendar,
+  Download,
+  Infinity as InfinityIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { z } from "zod";
@@ -211,7 +214,7 @@ export default function Dashboard() {
     );
   }
 
-  const allItems = orders?.flatMap((o) => o.items.map((item) => ({ ...item, orderStatus: o.status, orderId: o.id, orderCreatedAt: o.createdAt }))) || [];
+  const allItems = orders?.flatMap((o) => o.items.map((item) => ({ ...item, orderStatus: o.status, orderId: o.id, orderCreatedAt: o.createdAt, orderApprovedAt: o.approvedAt }))) || [];
   const activeIndicators = allItems.filter((i) => i.accessStatus === "active");
   const pendingItems = allItems.filter((i) => i.accessStatus === "pending");
   const totalOrders = orders?.length || 0;
@@ -462,7 +465,14 @@ export default function Dashboard() {
 
                 {view === "active" && (
                   <div className="mb-2">
-                    <h2 className="text-lg font-semibold mb-4" data-testid="text-active-heading">Active Indicators</h2>
+                    <div className="mb-4 flex items-end justify-between gap-3">
+                      <h2 className="text-lg font-semibold" data-testid="text-active-heading">Active Indicators</h2>
+                      {activeIndicators.length > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          {activeIndicators.length} live subscription{activeIndicators.length !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </div>
                     {activeIndicators.length === 0 ? (
                       <Card className="border-card-border p-8 text-center" data-testid="empty-active">
                         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
@@ -477,34 +487,153 @@ export default function Dashboard() {
                         </Link>
                       </Card>
                     ) : (
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        {activeIndicators.map((item) => {
-                          const badge = getAccessBadge(item.accessStatus);
+                      <div className="space-y-3">
+                        {activeIndicators.map((item, idx) => {
+                          const isLifetime = item.daysRemaining === null;
+                          const totalDays = item.isTrial ? 15 : item.duration * 30;
+                          const daysLeft = item.daysRemaining ?? 0;
+                          const pct = totalDays > 0 ? Math.min(1, Math.max(0, daysLeft / totalDays)) : 0;
+                          const radius = 30;
+                          const circumference = 2 * Math.PI * radius;
+                          const dashOffset = circumference * (1 - pct);
+                          const startedDate = new Date(item.orderApprovedAt ?? item.orderCreatedAt).toLocaleDateString("en-IN", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          });
+
+                          let ringStops: [string, string] = ["#10b981", "#06b6d4"];
+                          let textColor = "text-emerald-600 dark:text-emerald-400";
+                          let glow = "shadow-[0_0_24px_rgba(16,185,129,0.25)]";
+                          let nameAccent = "text-foreground";
+                          if (!isLifetime) {
+                            if (pct <= 0.25) {
+                              ringStops = ["#f43f5e", "#fb923c"];
+                              textColor = "text-rose-600 dark:text-rose-400";
+                              glow = "shadow-[0_0_24px_rgba(244,63,94,0.3)]";
+                              nameAccent = "text-rose-600 dark:text-rose-400";
+                            } else if (pct <= 0.5) {
+                              ringStops = ["#f59e0b", "#f97316"];
+                              textColor = "text-amber-600 dark:text-amber-400";
+                              glow = "shadow-[0_0_24px_rgba(245,158,11,0.25)]";
+                              nameAccent = "text-amber-700 dark:text-amber-400";
+                            }
+                          }
+                          const gradientId = `dl-grad-${item.id}`;
+                          const guideUrl = buildWhatsAppUrl(`Hi Pine Signal Lab team, please share the how-to-use guide PDF for "${item.indicatorName}".`);
+
                           return (
-                            <Card key={`active-${item.id}`} className="border-card-border p-4" data-testid={`active-indicator-${item.id}`}>
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <Link href={`/indicator/${item.indicatorSlug}`} className="font-medium hover:underline truncate" data-testid={`link-indicator-${item.id}`}>
+                            <Card
+                              key={`active-${item.id}`}
+                              className="overflow-hidden border-card-border p-0 transition-all hover-elevate"
+                              data-testid={`active-indicator-${item.id}`}
+                            >
+                              <div className="grid items-center gap-4 p-4 sm:gap-6 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-sm font-bold text-muted-foreground">{idx + 1}.</span>
+                                    <Link
+                                      href={`/indicator/${item.indicatorSlug}`}
+                                      className={`text-base font-semibold ${nameAccent} hover:underline truncate`}
+                                      data-testid={`link-indicator-${item.id}`}
+                                    >
                                       {item.indicatorName}
                                     </Link>
-                                    <Badge variant="outline" className={`shrink-0 text-xs ${badge.className}`}>
-                                      {badge.label}
-                                    </Badge>
                                   </div>
-                                  <p className="mt-1 text-sm text-muted-foreground">
-                                    {item.indicatorCategory} · {item.version === "strategy" ? "Strategy" : "Indicator"}
+                                  <div className="mt-1.5 flex flex-wrap items-center gap-2 text-sm">
+                                    <Badge
+                                      variant="outline"
+                                      className={`text-[10px] uppercase tracking-wide ${
+                                        item.version === "strategy"
+                                          ? "border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400"
+                                          : "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                      }`}
+                                    >
+                                      {item.version === "strategy" ? "Strategy" : "Indicator"}
+                                    </Badge>
+                                    <span className="font-medium text-foreground">
+                                      {item.isTrial ? "15-Day Trial" : `${item.duration} Month Plan`}
+                                    </span>
+                                  </div>
+                                  <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <Calendar className="h-3 w-3" />
+                                    Started {startedDate}
                                   </p>
                                 </div>
-                                <div className="text-right shrink-0">
-                                  {item.daysRemaining !== null ? (
-                                    <div>
-                                      <p className="text-lg font-bold" data-testid={`days-remaining-${item.id}`}>{item.daysRemaining}</p>
-                                      <p className="text-xs text-muted-foreground">days left</p>
+
+                                <div className="flex justify-start lg:justify-center">
+                                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-cyan-400 to-emerald-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                                    Active
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center justify-start lg:justify-center">
+                                  {isLifetime ? (
+                                    <div className="flex h-20 w-20 flex-col items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 text-white shadow-[0_0_24px_rgba(16,185,129,0.3)]">
+                                      <InfinityIcon className="h-7 w-7" />
+                                      <span className="text-[10px] font-semibold">Lifetime</span>
                                     </div>
                                   ) : (
-                                    <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Lifetime</p>
+                                    <div className={`relative flex h-20 w-20 items-center justify-center rounded-full ${glow}`}>
+                                      <svg className="absolute inset-0 -rotate-90" viewBox="0 0 80 80" aria-hidden="true">
+                                        <defs>
+                                          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stopColor={ringStops[0]} />
+                                            <stop offset="100%" stopColor={ringStops[1]} />
+                                          </linearGradient>
+                                        </defs>
+                                        <circle
+                                          cx="40"
+                                          cy="40"
+                                          r={radius}
+                                          fill="none"
+                                          className="stroke-muted/40"
+                                          strokeWidth="6"
+                                        />
+                                        <circle
+                                          cx="40"
+                                          cy="40"
+                                          r={radius}
+                                          fill="none"
+                                          stroke={`url(#${gradientId})`}
+                                          strokeWidth="6"
+                                          strokeLinecap="round"
+                                          strokeDasharray={circumference}
+                                          strokeDashoffset={dashOffset}
+                                        />
+                                      </svg>
+                                      <div className="z-10 flex flex-col items-center leading-none">
+                                        <span
+                                          className={`text-2xl font-extrabold ${textColor}`}
+                                          data-testid={`days-remaining-${item.id}`}
+                                        >
+                                          {daysLeft}
+                                        </span>
+                                        <span className="mt-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                          days left
+                                        </span>
+                                      </div>
+                                    </div>
                                   )}
+                                </div>
+
+                                <div className="flex lg:justify-end">
+                                  <a
+                                    href={guideUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex w-full lg:w-auto"
+                                    data-testid={`button-download-guide-${item.id}`}
+                                  >
+                                    <Button
+                                      type="button"
+                                      className="w-full gap-1.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-sm hover:from-emerald-600 hover:to-emerald-700 lg:w-auto"
+                                    >
+                                      <Download className="h-4 w-4" />
+                                      Download How-to Guide
+                                    </Button>
+                                  </a>
                                 </div>
                               </div>
                             </Card>
