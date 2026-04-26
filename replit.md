@@ -30,6 +30,7 @@ A premium web application for browsing and subscribing to TradingView indicators
 - `/cart` - Cart with duration selection, smart proceed (auth check)
 - `/checkout` - Auto-filled form for logged-in users, registration form for guests
 - `/dashboard` - User dashboard with order history, active indicators, pending requests
+- `/admin` - Admin console with sidebar (Dashboard / Analytics / Editor). Dashboard shows stats cards, a "Today's New Requests" panel (per-order rows with Grant/Reject/Hold + Quick View + View Details + CSV export), and the full Users table with slide-in detail panel.
 
 ## API Routes
 - `GET /api/indicators` - List all indicators
